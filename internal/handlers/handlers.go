@@ -92,7 +92,6 @@ func (h *Handler) SetDifficulty(c *gin.Context) {
 		renderHomeError(c, "An unexpected error occurred")
 		return
 	}
-	slog.Debug("Setting bot difficulty", "difficulty", req.Difficulty, "id", req.ID)
 
 	player, ok := game.GetPlayer(req.ID)
 	if !ok {
