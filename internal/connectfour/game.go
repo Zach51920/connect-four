@@ -7,9 +7,11 @@ import (
 type GameState int
 
 const (
-	GameStateOngoing GameState = iota
+	GameStateNew GameState = iota
+	GameStateOngoing
 	GameStateWin
 	GameStateDraw
+	GameStateCancelled
 )
 
 const (
@@ -26,70 +28,71 @@ type Meta struct {
 }
 
 type Game struct {
-	Players    [2]Player
-	Board      *Board
-	Meta       *Meta
-	currentIdx int
+	Players [2]Player
+	Turns   *TurnList
+	Board   *Board
+	Meta    *Meta
+	State   GameState
 }
 
 func NewGame(player1, player2 Player) *Game {
-	return &Game{
+	game := &Game{
 		Players: [2]Player{player1, player2},
 		Board:   NewBoard(DefaultBoardRows, DefaultBoardColumns),
 		Meta:    &Meta{StartTime: time.Now(), LastMove: time.Now()},
 	}
+	game.Turns = NewTurnList(game)
+	return game
 }
 
 func (g *Game) Restart() {
+	g.State = GameStateNew
 	g.Board = NewBoard(g.Board.NumRows(), g.Board.NumCols())
-	g.currentIdx = 0
+	g.Turns.Reset()
 
-	// switch the player order
-	g.Players[0], g.Players[1] = g.Players[1], g.Players[0]
-
-	// reset the players and set the first player as red
-	g.Players[0].Reset().SetToken('X')
-	g.Players[1].Reset().SetToken('O')
+	for _, player := range g.Players {
+		player.Reset()
+	}
 }
 
-func (g *Game) State() GameState {
+func (g *Game) RefreshState() GameState {
+	if g.State == GameStateCancelled {
+		return GameStateCancelled
+	}
+
+	g.State = GameStateOngoing
 	if g.Board.IsFull() {
-		return GameStateDraw
+		g.State = GameStateDraw
 	}
 	for _, player := range g.Players {
 		if g.Board.CheckWin(player.Token()) {
-			return GameStateWin
+			g.State = GameStateWin
 		}
 	}
-	return GameStateOngoing
-}
-
-func (g *Game) IsTurn(player Player) bool {
-	return g.Players[g.currentIdx].Token() == player.Token()
+	return g.State
 }
 
 func (g *Game) HasHuman() bool {
-	return hasPlayerType[*HumanPlayer](g.Players)
-}
-
-func (g *Game) HasBot() bool {
-	return hasPlayerType[*BotPlayer](g.Players)
-}
-
-func (g *Game) GetPlayer(playerID string) (Player, bool) {
-	for _, p := range g.Players {
-		if p.ID() == playerID {
-			return p, true
-		}
-	}
-	return nil, false
-}
-
-func hasPlayerType[T *BotPlayer | *HumanPlayer](players [2]Player) bool {
-	for _, player := range players {
-		if _, ok := player.(T); ok {
+	for _, player := range g.Players {
+		if _, isHuman := player.(*HumanPlayer); isHuman {
 			return true
 		}
 	}
 	return false
+}
+
+func (g *Game) InProgress() bool {
+	return g.State != GameStateDraw && g.State != GameStateWin && g.State != GameStateCancelled
+}
+
+func (g *Game) Cancel() {
+	g.State = GameStateCancelled
+}
+
+func (g *Game) ExpectHumanInput() bool {
+	if g.State == GameStateDraw || g.State == GameStateWin {
+		return false
+	}
+	_, isHuman := g.Turns.Current().(*HumanPlayer)
+	return isHuman
 }

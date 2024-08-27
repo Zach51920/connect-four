@@ -40,9 +40,9 @@ func (s *Server) init() error {
 
 	// register handlers
 	handle := handlers.New()
-	r.GET("/", handle.Root)
+	r.GET("/", handle.Home)
 	r.POST("/game", handle.CreateGame)
-	r.GET("/game", handle.GetGame)
+	r.GET("/game/stream", handle.StreamGame)
 	r.POST("/game/move", handle.MakeMove)
 	r.POST("/game/difficulty", handle.SetDifficulty)
 	r.POST("/game/restart", handle.RestartGame)

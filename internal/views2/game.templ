@@ -5,26 +5,52 @@ import (
     "fmt"
 )
 
-templ Game (game *connectfour.Game) {
+templ Game(game *connectfour.Game) {
     @Root() {
-        @GameLayout(game)
-    }
-}
-
-
-templ GameLayout(game *connectfour.Game) {
-    <div id="game" class="flex flex-col justify-center items-center min-h-screen">
-        <h1 class="text-2xl md:text-3xl lg:text-5xl font-bold text-center mb-8">Connect 4</h1>
-        <div class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            <div class="hidden lg:block"></div>
-            <div class="flex justify-center items-center">
-                @ConnectFourBoard(game, *game.Board)
-            </div>
-            <div class="lg:mt-0 mt-8">
-                @ScoreCard(game)
+        <div id="game-container" class="flex flex-col justify-center items-center min-h-screen">
+            <h1 class="text-2xl md:text-3xl lg:text-5xl font-bold text-center mb-8">Connect 4</h1>
+            <div class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div class="hidden lg:block"></div>
+                <div id="board-container" class="flex justify-center items-center">
+                    @ConnectFourBoard(game, *game.Board)
+                </div>
+                <div id="score-container" class="lg:mt-0 mt-8">
+                    @ScoreCard(game)
+                </div>
             </div>
         </div>
-    </div>
+        <script>
+            function setupSSE() {
+                if (typeof EventSource !== "undefined") {
+                    var source = new EventSource('/game/stream');
+
+                    source.onopen = function(event) {
+                        console.log('SSE connection opened', event);
+                    };
+
+                    source.onerror = function(event) {
+                        console.error('SSE connection error', event);
+                    };
+
+                    source.addEventListener('board-update', function(event) {
+                        console.log('Board update received');
+                        document.getElementById('board-container').innerHTML = event.data;
+                        htmx.process(document.getElementById('board-container'));
+                    });
+
+                    source.addEventListener('score-update', function(event) {
+                        console.log('Score update received');
+                        document.getElementById('score-container').innerHTML = event.data;
+                    });
+                } else {
+                    console.error('SSE not supported');
+                }
+            }
+
+            document.addEventListener('htmx:load', setupSSE);
+            setupSSE();  // Call it immediately as well
+        </script>
+    }
 }
 
 templ ScoreCard(game *connectfour.Game) {
@@ -48,9 +74,9 @@ templ ScoreCard(game *connectfour.Game) {
 
 templ ConnectFourBoard(game *connectfour.Game, board connectfour.Board) {
     <div id="board" class="w-full max-w-lg mx-auto">
-        if game.State() == connectfour.GameStateOngoing && game.HasHuman() {
-            @dropZone(board)
-        }
+        <div id="dropzone-container">
+            @dropZone(game, board)
+        </div>
         <div class="card bg-primary shadow-xl p-2 md:p-3">
             <div class="grid grid-cols-7 gap-1 md:gap-2">
                 for _, row := range board {
@@ -68,27 +94,34 @@ templ ConnectFourBoard(game *connectfour.Game, board connectfour.Board) {
                 }
             </div>
         </div>
-        @playControls(game)
+        <div id="playcontrols-container">
+            @playControls(game)
+        </div>
     </div>
 }
 
-templ dropZone(board connectfour.Board) {
+
+templ dropZone(game *connectfour.Game, board connectfour.Board) {
+    if game.HasHuman() && game.InProgress() {
         <div class="grid grid-cols-7 gap-1 md:gap-2 mb-2">
             for col := range board.NumCols() {
-                <div id="dropzone" class="flex justify-center items-center">
-                    if !board.IsColumnFull(col) {
+                <div class="flex justify-center items-center">
+                    if game.ExpectHumanInput() && !board.IsColumnFull(col) {
                          <button
                             hx-trigger="click"
-                            hx-target="#root"
+                            hx-target=""
                             hx-post="/game/move"
                             hx-vals={ fmt.Sprintf(`{"column": "%v"}`, col) }
                             hx-headers='{"Content-Type": "application/json"}'
                             class="text-2xl md:text-3xl text-accent hover:animate-bounce transition-all duration-500"
                             >▼</button>
+                    } else {
+                         <button class="text-2xl md:text-3xl text-accent/50 btn-disabled btn-">▼</button>
                     }
                 </div>
             }
         </div>
+    }
 }
 
 templ playControls(game *connectfour.Game) {
@@ -96,7 +129,9 @@ templ playControls(game *connectfour.Game) {
         <button
             class="btn btn-outline bg-gray-500/50 btn-lg text-white rounded-full shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center"
             hx-get="/"
-            hx-target="body"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            hx-target="#root"
+            hx-push-url="true">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
             Home
@@ -104,21 +139,22 @@ templ playControls(game *connectfour.Game) {
         <button
             class="btn btn-primary btn-lg text-white rounded-full shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center"
             hx-post="/game/restart"
-            hx-target="body"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            hx-target="">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            if game.State() == connectfour.GameStateOngoing {
+            if game.InProgress() {
                 Restart
             } else {
                 Play Again
             }
         </button>
-        if !game.HasHuman() && game.State() == connectfour.GameStateOngoing {
+        if !game.HasHuman() && game.State == connectfour.GameStateNew {
             <button
                 class="btn btn-accent btn-lg text-white rounded-full shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center"
                 hx-post="/game/move"
-                hx-target="body"
-            >Next</button>
+                hx-target=""
+            >Start</button>
         }
     </div>
 }

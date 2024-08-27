@@ -1,49 +1,51 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/Zach51920/connect-four/internal/connectfour"
-	"github.com/Zach51920/connect-four/internal/views"
+	"github.com/Zach51920/connect-four/internal/views2"
+	"github.com/Zach51920/connect-four/sessions"
 	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
 	"log/slog"
+	"time"
 )
 
-type Handler struct {
-	sessions *Sessions
+type Handlers struct {
+	sessions sessions.Store
 }
 
-func New() *Handler {
-	return &Handler{sessions: NewSessions()}
+func New() *Handlers {
+	return &Handlers{sessions: sessions.NewMemorySessionStore()}
 }
 
-func (h *Handler) Root(c *gin.Context) {
+func (h *Handlers) Home(c *gin.Context) {
+	// if there's an active game, cancel it
+	sessionID := c.GetString("session_id")
+	sess, _ := h.sessions.Get(sessionID)
+	if sess != nil && sess.Game != nil && sess.Game.InProgress() {
+		render(c, views.WarningToast("The active game has been cancelled"))
+		sess.Game.Cancel()
+	}
+
+	// render the home page
 	render(c, views.Home())
 }
 
-func (h *Handler) GetGame(c *gin.Context) {
-	game := h.getCurrentGame(c)
-	if game == nil {
-		renderHomeError(c, "You don't have any active games")
-		return
-	}
-	render(c, views.Game(game))
-}
-
-func (h *Handler) CreateGame(c *gin.Context) {
+func (h *Handlers) CreateGame(c *gin.Context) {
+	// check if we have an active session
 	sessionID := c.GetString("session_id")
-	if sessionID == "" {
-		renderHomeError(c, "No active sessions found")
-		return
+	sess, ok := h.sessions.Get(sessionID)
+	if !ok || sess == nil {
+		sess = h.sessions.New(sessionID, nil)
 	}
 
 	var req CreateGameRequest
 	if err := c.ShouldBind(&req); err != nil {
-		slog.Error("failed to bind request", "error", err)
-		renderHomeError(c, "An unexpected error occurred")
+		slog.Error("Failed to bind CreateGameRequest", "error", err)
 		return
 	}
 
+	// create the players according to the game type
 	var player1, player2 connectfour.Player
 	switch req.Type {
 	case GameTypeBot:
@@ -55,132 +57,105 @@ func (h *Handler) CreateGame(c *gin.Context) {
 		player1 = connectfour.NewMinimaxBot('X')
 		player2 = connectfour.NewMinimaxBot('O')
 	default:
-		renderHomeError(c, "Invalid game type")
+		h.handleCriticalErr(c, "Unknown game type")
 		return
 	}
 
+	// create the game and assign it to the session
 	game := connectfour.NewGame(player1, player2)
-	h.sessions.Set(sessionID, game)
-	render(c, views.Game(game))
-}
+	sess.SetGame(game)
 
-func (h *Handler) RestartGame(c *gin.Context) {
-	game := h.getCurrentGame(c)
-	if game == nil {
-		renderHomeError(c, "You don't have any active games")
+	// render the initial game board
+	if err := views.Game(sess.Game).Render(c.Request.Context(), c.Writer); err != nil {
+		h.handleCriticalErr(c, "Failed to render game board")
 		return
-	}
-	game.Restart()
-
-	// if the first move is made by a bot, make the move
-	if bot, ok := game.Players[0].(*connectfour.BotPlayer); ok && game.HasHuman() {
-		bot.MakeBestMove(game.Board)
-	}
-	render(c, views.Game(game))
-}
-
-func (h *Handler) SetDifficulty(c *gin.Context) {
-	game := h.getCurrentGame(c)
-	if game == nil {
-		renderHomeError(c, "You don't have any active games")
-		return
-	}
-
-	var req SetDifficultyRequest
-	if err := c.ShouldBind(&req); err != nil {
-		slog.Error("failed to bind request", "error", err)
-		renderHomeError(c, "An unexpected error occurred")
-		return
-	}
-
-	player, ok := game.GetPlayer(req.ID)
-	if !ok {
-		render(c, views.ErrorToast("Player not found"))
-		return
-	}
-	bot, ok := player.(*connectfour.BotPlayer)
-	if !ok {
-		render(c, views.ErrorToast("Player is not a bot"))
-		return
-	}
-	slog.Debug("Setting bot difficulty", "difficulty", req.Difficulty, "id", bot.ID())
-	bot.Strategy.SetSkill(req.Difficulty)
-	render(c, views.Game(game))
-}
-
-func (h *Handler) MakeMove(c *gin.Context) {
-	var req MakeMoveRequest
-	if err := c.ShouldBind(&req); err != nil {
-		slog.Error("failed to bind request", "error", err)
-		renderHomeError(c, "An unexpected error occurred")
-		return
-	}
-	game := h.getCurrentGame(c)
-	if game == nil {
-		renderHomeError(c, "You don't have any active games")
-		return
-	}
-	defer render(c, views.Game(game)) // re-render the game
-
-	// order players by turn
-	// seems a bit jank but if the bot goes first their first move takes place in the Restart handler
-	var players [2]connectfour.Player
-	if game.IsTurn(game.Players[0]) {
-		players = [2]connectfour.Player{game.Players[0], game.Players[1]}
-	} else {
-		players = [2]connectfour.Player{game.Players[1], game.Players[0]}
-	}
-
-	humanMoved := false
-	for _, player := range players {
-		human, ok := player.(*connectfour.HumanPlayer)
-		if ok && !humanMoved {
-			_ = human.MakeMove(game.Board, req.Column)
-			state := game.State()
-			if state == connectfour.GameStateWin {
-				human.IncWins()
-				render(c, views.Winner(human.Name()))
-			} else if state == connectfour.GameStateDraw {
-				render(c, views.Stalemate())
-			} else {
-				humanMoved = true
-				continue
-			}
-			return
-		}
-
-		bot, ok := player.(*connectfour.BotPlayer)
-		if ok {
-			bot.MakeBestMove(game.Board)
-			state := game.State()
-			if state == connectfour.GameStateWin {
-				render(c, views.Loser())
-			} else if state == connectfour.GameStateDraw {
-				render(c, views.Stalemate())
-			} else {
-				continue
-			}
-			return
-		}
 	}
 }
 
-func (h *Handler) getCurrentGame(c *gin.Context) *connectfour.Game {
+func (h *Handlers) StreamGame(c *gin.Context) {
 	sessionID := c.GetString("session_id")
-	if sessionID == "" {
-		renderHomeError(c, "No active sessions found")
-		return nil
+	sess, ok := h.sessions.Get(sessionID)
+	if !ok || sess == nil || sess.Game == nil {
+		h.handleCriticalErr(c, "Failed to get active game")
+		return
 	}
-	return h.sessions.Get(sessionID)
+	sess.Stream(c)
+}
+
+func (h *Handlers) RestartGame(c *gin.Context) {
+	sessionID := c.GetString("session_id")
+	sess, ok := h.sessions.Get(sessionID)
+	if !ok || sess == nil || sess.Game == nil {
+		h.handleCriticalErr(c, "Failed to get active game")
+		return
+	}
+	sess.Game.Restart()
+	sess.Refresh()
+}
+
+func (h *Handlers) MakeMove(c *gin.Context) {
+	sessionID := c.GetString("session_id")
+	sess, ok := h.sessions.Get(sessionID)
+	if !ok || sess == nil || sess.Game == nil {
+		h.handleCriticalErr(c, "Failed to get active game")
+		return
+	}
+
+	// the main game loop
+	game := sess.Game
+	humanMoved := false
+	for game.InProgress() {
+		player := game.Turns.Current()
+
+		if _, ok = player.(*connectfour.HumanPlayer); ok {
+			// if human already moved just return because we're expecting more input
+			if humanMoved {
+				return
+			}
+
+			// make a move from the input
+			var req MakeMoveRequest
+			if err := c.ShouldBind(&req); err != nil {
+				h.handleError(c, "An unexpected error has occurred")
+				slog.Error("Failed to bind MakeMoveRequest", "error", err)
+				return
+			}
+			if err := player.MakeMove(game.Board, req.Column); err != nil {
+				h.handleError(c, "Invalid move selection")
+				return
+			}
+			humanMoved = true
+		} else if bot, ok := player.(*connectfour.BotPlayer); ok {
+			// add some artificial delay
+			timer := time.NewTimer(500 * time.Millisecond)
+			bot.MakeBestMove(game.Board)
+			<-timer.C
+		}
+
+		// refresh board and session
+		game.RefreshState()
+		sess.Refresh()
+		if game.InProgress() {
+			game.Turns.Next()
+		}
+	}
+}
+
+func (h *Handlers) SetDifficulty(c *gin.Context) {
+
 }
 
 func render(c *gin.Context, component templ.Component) {
 	if err := component.Render(c.Request.Context(), c.Writer); err != nil {
-		_ = c.Error(fmt.Errorf("failed to render component: %w", err))
+		slog.Error("Failed to render component", "error", err)
 	}
 }
 
-func renderHomeError(c *gin.Context, message string) {
+func (h *Handlers) handleCriticalErr(c *gin.Context, message string) {
+	h.Home(c) // send em home
 	render(c, views.ErrorToast(message))
-	render(c, views.Home())
+}
+
+func (h *Handlers) handleError(c *gin.Context, message string) {
+	render(c, views.ErrorToast(message))
 }

@@ -1,0 +1,41 @@
+package views
+
+templ ErrorToast(message string) {
+    <div class="toast toast-top toast-end animate__animated animate_fast animate__fadeInRight">
+        <div class="alert alert-error animate__animated animate_fast animate__delay-5s animate__fadeOutRight">
+            <span>{ message }</span>
+        </div>
+    </div>
+}
+
+templ WarningToast(message string) {
+    <div class="toast toast-top toast-end animate__animated animate_fast animate__fadeInRight">
+        <div class="alert alert-warning animate__animated animate_fast animate__delay-5s animate__fadeOutRight">
+            <span>{ message }</span>
+        </div>
+    </div>
+}
+
+templ Winner(winner string) {
+    @MessageOverlay() {
+        <span class="mr-2">🏆</span> { winner } WINS!
+    }
+}
+
+templ Stalemate() {
+    @MessageOverlay() {
+        <span class="mr-2">⚖️</span> DRAW!
+    }
+}
+
+templ MessageOverlay() {
+    <input type="checkbox" checked="checked" id="message-overlay" class="modal-toggle" />
+    <div class="modal">
+        <div class="modal-box w-11/12 max-w-md animate__animated animate__backInDown animate__faster bg-gray-500/10 rounded-2xl shadow-lg mx-auto my-8">
+            <h3 class="font-bold text-white text-2xl flex items-center justify-center animate__animated animate__pulse animate__infinite">
+                { children... }
+            </h3>
+        </div>
+        <label class="modal-backdrop" for="message-overlay"></label>
+    </div>
+}
