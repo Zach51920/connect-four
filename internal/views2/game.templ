@@ -61,12 +61,14 @@ templ ScoreCard(game *connectfour.Game) {
                 <div class="w-8 h-8 bg-error rounded-full mx-auto mb-2"></div>
                 <p class="font-semibold">{ game.Players[0].Name() }</p>
                 <p class="text-2xl font-bold">{ fmt.Sprintf("%v", game.Players[0].Score()) }</p>
+                <p class="text-secondary text-sm">{ fmt.Sprintf("Wins: %d", game.Players[0].Wins()) }</p>
             </div>
             <div class="text-4xl font-bold">vs</div>
             <div class="text-center">
                 <div class="w-8 h-8 bg-warning rounded-full mx-auto mb-2"></div>
                 <p class="font-semibold">{ game.Players[1].Name() }</p>
                 <p class="text-2xl font-bold">{ fmt.Sprintf("%v", game.Players[1].Score()) }</p>
+                <p class="text-secondary text-sm">{ fmt.Sprintf("Wins: %d", game.Players[1].Wins()) }</p>
             </div>
         </div>
     </div>

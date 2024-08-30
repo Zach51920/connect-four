@@ -33,6 +33,7 @@ type Game struct {
 	Board   *Board
 	Meta    *Meta
 	State   GameState
+	Winner  Player // Add a Winner field to keep track of the winning player
 }
 
 func NewGame(player1, player2 Player) *Game {
@@ -49,6 +50,7 @@ func (g *Game) Restart() {
 	g.State = GameStateNew
 	g.Board = NewBoard(g.Board.NumRows(), g.Board.NumCols())
 	g.Turns.Reset()
+	g.Winner = nil // Reset the winner
 
 	for _, player := range g.Players {
 		player.Reset()
@@ -67,6 +69,9 @@ func (g *Game) RefreshState() GameState {
 	for _, player := range g.Players {
 		if g.Board.CheckWin(player.Token()) {
 			g.State = GameStateWin
+			g.Winner = player
+			player.IncWins() // Increment the wins for the winning player
+			break
 		}
 	}
 	return g.State
