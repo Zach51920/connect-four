@@ -27,7 +27,6 @@ func (s *Server) init() error {
 	gin.SetMode(s.config.ParseGinMode())
 	r := gin.New()
 	r.Use(gin.Recovery())
-	r.Use(logMiddleware)
 
 	// init cors
 	corsConfig := cors.DefaultConfig()
@@ -50,8 +49,9 @@ func (s *Server) init() error {
 	session := sessions.Sessions("connect_four", store)
 	r.Use(session)
 
-	// register session middleware
+	// register middleware
 	r.Use(sessionMiddleware)
+	r.Use(logMiddleware)
 
 	// register handlers
 	handle := handlers.New()
