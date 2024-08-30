@@ -140,10 +140,9 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 			humanMoved = true
 		} else if bot, ok := player.(*connectfour.BotPlayer); ok {
 			// add some artificial delay
-			timer := time.NewTimer(500 * time.Millisecond)
+			timer := time.NewTimer(300 * time.Millisecond)
 			bot.MakeBestMove(game.Board)
 			<-timer.C
-			timer.Stop()
 		}
 
 		// refresh board and session
@@ -181,7 +180,7 @@ func (h *Handlers) SetDifficulty(c *gin.Context) {
 			return
 		}
 		slog.Debug("Setting bot difficulty", "difficulty", req.Difficulty, "bot", bot.ID())
-		bot.Strategy.SetSkill(req.Difficulty)
+		bot.SetDifficulty(req.Difficulty)
 		break
 	}
 }
