@@ -6,12 +6,12 @@ const (
 	GameTypeBotOnly = "BOT_ONLY"
 )
 
-type CreateGameRequest struct {
-	Type string `form:"game_type"`
-}
-
 type MakeMoveRequest struct {
 	Column int `form:"column"`
+}
+
+type CreateGameRequest struct {
+	Type string `form:"game_type"`
 }
 
 type SetDifficultyRequest struct {

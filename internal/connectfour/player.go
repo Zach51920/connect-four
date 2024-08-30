@@ -24,6 +24,7 @@ type Player interface {
 	SetToken(token rune) *BasePlayer
 	Reset() *BasePlayer
 	Wins() int
+	IncWins() // Add this method to the interface
 }
 
 type BasePlayer struct {

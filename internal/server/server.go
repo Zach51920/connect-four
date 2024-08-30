@@ -6,7 +6,9 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"log"
 	"os"
+	"path/filepath"
 )
 
 type Server struct {
@@ -28,6 +30,14 @@ func (s *Server) init() error {
 	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization", "Content-Type")
 	r.Use(cors.New(corsConfig))
 
+	// serve static files
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Failed to get working directory: %v", err)
+	}
+	publicDir := filepath.Join(wd, "public")
+	r.Static("/public", publicDir)
+
 	// init cookie store
 	secret := os.Getenv("COOKIE_SECRET")
 	store := cookie.NewStore([]byte(secret))
@@ -40,12 +50,14 @@ func (s *Server) init() error {
 
 	// register handlers
 	handle := handlers.New()
-	r.GET("/", handle.Root)
-	r.POST("/game", handle.CreateGame)
+	r.GET("/", handle.Home)
 	r.GET("/game", handle.GetGame)
+	r.POST("/game", handle.CreateGame)
+	r.GET("/game/stream", handle.StreamGame)
 	r.POST("/game/move", handle.MakeMove)
 	r.POST("/game/difficulty", handle.SetDifficulty)
 	r.POST("/game/restart", handle.RestartGame)
+	r.POST("/game/stop", handle.StopGame)
 
 	s.router = r
 	return nil

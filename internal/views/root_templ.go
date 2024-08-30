@@ -26,15 +26,7 @@ func Root() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\" data-theme=\"business\"><head><title>Connect 4</title><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link href=\"https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css\" rel=\"stylesheet\" type=\"text/css\"><script src=\"https://cdn.tailwindcss.com\"></script><link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css\"><script src=\"https://unpkg.com/htmx.org/dist/ext/sse.js\"></script><script src=\"https://unpkg.com/htmx.org@2.0.2\" defer></script><script>\n                function getPreferredTheme() {\n                    if (localStorage.getItem(\"theme\")) {\n                        return localStorage.getItem(\"theme\");\n                    }\n                    return window.matchMedia(\"(prefers-color-scheme: dark)\").matches ? \"business\" : \"corperate\";\n                }\n\n                function setTheme(theme) {\n                    document.documentElement.setAttribute(\"data-theme\", theme);\n                    document.body.setAttribute(\"data-theme\", theme);\n                    localStorage.setItem(\"theme\", theme);\n                }\n\n                function toggleTheme() {\n                    const currentTheme = document.documentElement.getAttribute(\"data-theme\");\n                    const newTheme = currentTheme === \"corporate\" ? \"business\" : \"corporate\";\n                    setTheme(newTheme);\n                }\n\n                // Set the initial theme when the page loads\n                document.addEventListener(\"DOMContentLoaded\", function() {\n                    setTheme(getPreferredTheme());\n\n                    // Update the checkbox state based on the current theme\n                    const themeToggle = document.querySelector(\".theme-controller\");\n                    if (themeToggle) {\n                        themeToggle.checked = getPreferredTheme() === \"corporate\";\n                    }\n                });\n\n                // Listen for changes in color scheme preference\n                window.matchMedia(\"(prefers-color-scheme: dark)\").addEventListener(\"change\", (e) => {\n                    if (!localStorage.getItem(\"theme\")) {\n                        setTheme(e.matches ? \"business\" : \"corporate\");\n                    }\n                });\n            </script></head><body id=\"root\" data-theme=\"business\"><div id=\"root\" class=\"min-h-screen bg-c4-base-100 text-base-content\"><div class=\"absolute bottom-4 left-4\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = themeController().Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><div class=\"container mx-auto p-4\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\" data-theme=\"business\"><head><title>Connect 4</title><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link href=\"https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css\" rel=\"stylesheet\" type=\"text/css\"><script src=\"https://cdn.tailwindcss.com\"></script><link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css\"><script src=\"https://unpkg.com/htmx.org/dist/ext/sse.js\"></script><script src=\"https://unpkg.com/htmx.org@2.0.2\" defer></script><script src=\"/public/scripts/theme.js\"></script></head><body id=\"root\" data-theme=\"business\"><div id=\"root\" class=\"h-screen bg-c4-base-100\"><div class=\"container mx-auto p-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -42,7 +34,15 @@ func Root() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></div></body></html>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = themeController().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
