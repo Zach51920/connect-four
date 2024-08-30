@@ -1,0 +1,48 @@
+package views
+
+import "fmt"
+
+templ Home() {
+    @Root() {
+        <div class="flex flex-col items-center justify-center min-h-screen">
+            <h1 class="text-5xl font-bold text-primary mb-8 text-center">CONNECT 4</h1>
+            <p class="text-xl text-my-secondary mb-8 text-center max-w-2xl">Choose your game mode and connect to victory!</p>
+            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                @createGameButton("PvP", "LOCAL", pvpIcon())
+                @createGameButton("Player VS. Bot", "BOT", playerVsBotIcon())
+                @createGameButton("Bot VS. Bot", "BOT_ONLY", botVsBotIcon())
+            </div>
+        </div>
+    }
+}
+
+templ createGameButton(text, gametype string, icon templ.Component) {
+    <button
+        class="btn btn-lg bg-secondary text-white hover:bg-secondary-focus transition-colors duration-300 flex items-center justify-center space-x-2 px-6 py-3 rounded-full shadow-lg"
+        hx-trigger="click"
+        hx-target="#root"
+        hx-post="/game"
+        hx-vals={ fmt.Sprintf(`{"game_type": "%v"}`, gametype) }
+    >
+        @icon
+        <span>{ text }</span>
+    </button>
+}
+
+templ pvpIcon() {
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+}
+
+templ playerVsBotIcon() {
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2 1m2-1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+    </svg>
+}
+
+templ botVsBotIcon() {
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+    </svg>
+}

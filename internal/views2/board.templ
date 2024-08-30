@@ -1,0 +1,131 @@
+package views
+
+import (
+    "github.com/Zach51920/connect-four/internal/connectfour"
+    "fmt"
+)
+
+templ ConnectFourBoard(game *connectfour.Game, board connectfour.Board) {
+    <div id="board" class="w-full max-w-lg mx-auto">
+        <div id="dropzone-container">
+            @dropZone(game, board)
+        </div>
+        <div class="card bg-primary shadow-xl p-2 md:p-3">
+            <div class="grid grid-cols-7 gap-1 md:gap-2">
+                for i, row := range board.Cells {
+                    for j, cell := range row {
+                        <div class="aspect-square bg-primary-focus rounded-full p-0.5 md:p-1">
+                            if cell == 'O' {
+                                <div class="w-full h-full bg-warning rounded-full">
+                                    if board.IsWinningCell(i, j) {
+                                        <div class="w-full h-full bg-warning/50 rounded-full animate__animated animate__heartBeat animate__infinite"></div>
+                                    }
+                                </div>
+                            } else if cell == 'X' {
+                                <div class="w-full h-full bg-error rounded-full">
+                                    if board.IsWinningCell(i, j) {
+                                        <div class="w-full h-full bg-error/50 rounded-full animate__animated animate__heartBeat animate__infinite"></div>
+                                    }
+                                </div>
+                            } else {
+                                <div class="w-full h-full bg-base-100 rounded-full opacity-20"></div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div id="playcontrols-container">
+            @playControls(game)
+        </div>
+    </div>
+    <script>
+        function setupSSE() {
+            if (typeof EventSource !== "undefined") {
+                var source = new EventSource('/game/stream');
+
+                source.onopen = function(event) {
+                    console.log('SSE connection opened', event);
+                };
+
+                source.onerror = function(event) {
+                    console.error('SSE connection error', event);
+                };
+
+                source.addEventListener('board-update', function(event) {
+                    console.log('Board update received');
+                    document.getElementById('board-container').innerHTML = event.data;
+                    htmx.process(document.getElementById('board-container'));
+                });
+
+                source.addEventListener('score-update', function(event) {
+                    console.log('Score update received');
+                    document.getElementById('score-container').innerHTML = event.data;
+                });
+            } else {
+                console.error('SSE not supported');
+            }
+        }
+
+        document.addEventListener('htmx:load', setupSSE);
+        setupSSE();  // Call it immediately as well
+    </script>
+}
+
+templ dropZone(game *connectfour.Game, board connectfour.Board) {
+    if game.HasHuman() && game.InProgress() {
+        <div class="grid grid-cols-7 gap-1 md:gap-2 mb-2">
+            for col := range board.NumCols() {
+                <div class="flex justify-center items-center">
+                    if game.ExpectHumanInput() && !board.IsColumnFull(col) {
+                         <button
+                            hx-trigger="click"
+                            hx-target=""
+                            hx-post="/game/move"
+                            hx-vals={ fmt.Sprintf(`{"column": "%v"}`, col) }
+                            hx-headers='{"Content-Type": "application/json"}'
+                            class="text-2xl md:text-3xl text-accent hover:animate-bounce transition-all duration-500"
+                            >▼</button>
+                    } else {
+                         <button class="text-2xl md:text-3xl text-accent/50 btn-disabled btn-">▼</button>
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+templ playControls(game *connectfour.Game) {
+    <div class="flex justify-center space-x-4 mt-6">
+        <button
+            class="btn btn-outline bg-gray-500/50 btn-lg text-white rounded-full shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center"
+            hx-get="/"
+            hx-target="#root"
+            hx-push-url="true">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Home
+        </button>
+        <button
+            class="btn btn-primary btn-lg text-white rounded-full shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center"
+            hx-post="/game/restart"
+            hx-target="">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            if game.InProgress() {
+                Restart
+            } else {
+                Play Again
+            }
+        </button>
+        if !game.HasHuman() && game.State == connectfour.GameStateNew {
+            <button
+                class="btn btn-accent btn-lg text-white rounded-full shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center"
+                hx-post="/game/move"
+                hx-target=""
+            >Start</button>
+        }
+    </div>
+}

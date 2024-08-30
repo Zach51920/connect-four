@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/Zach51920/connect-four/internal/connectfour"
+	"github.com/Zach51920/connect-four/internal/sessions"
 	"github.com/Zach51920/connect-four/internal/views2"
-	"github.com/Zach51920/connect-four/sessions"
 	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
 	"log/slog"
