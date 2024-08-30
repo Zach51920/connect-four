@@ -9,7 +9,7 @@ import (
 
 func logMiddleware(c *gin.Context) {
 	sessionID := c.GetString("session_id")
-	slog.Debug("received request", "path", c.Request.URL.Path, "session_id", sessionID)
+	slog.Info("received request", "path", c.Request.URL.Path, "session_id", sessionID)
 	c.Next()
 }
 
