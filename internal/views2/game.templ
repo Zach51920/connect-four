@@ -75,19 +75,27 @@ templ ScoreCard(game *connectfour.Game) {
 }
 
 templ ConnectFourBoard(game *connectfour.Game, board connectfour.Board) {
-    <div id="board" class="w-full max-w-lg mx-auto">
+   <div id="board" class="w-full max-w-lg mx-auto">
         <div id="dropzone-container">
             @dropZone(game, board)
         </div>
         <div class="card bg-primary shadow-xl p-2 md:p-3">
             <div class="grid grid-cols-7 gap-1 md:gap-2">
-                for _, row := range board {
-                    for _, cell := range row {
+                for i, row := range board.Cells {
+                    for j, cell := range row {
                         <div class="aspect-square bg-primary-focus rounded-full p-0.5 md:p-1">
                             if cell == 'O' {
-                                <div class="w-full h-full bg-warning rounded-full"></div>
+                                <div class="w-full h-full bg-warning rounded-full">
+                                    if board.IsWinningCell(i, j) {
+                                        <div class="w-full h-full bg-warning/50 rounded-full animate__animated animate__heartBeat animate__infinite"></div>
+                                    }
+                                </div>
                             } else if cell == 'X' {
-                                <div class="w-full h-full bg-error rounded-full"></div>
+                                <div class="w-full h-full bg-error rounded-full">
+                                    if board.IsWinningCell(i, j) {
+                                        <div class="w-full h-full bg-error/50 rounded-full animate__animated animate__heartBeat animate__infinite"></div>
+                                    }
+                                </div>
                             } else {
                                 <div class="w-full h-full bg-base-100 rounded-full opacity-20"></div>
                             }
