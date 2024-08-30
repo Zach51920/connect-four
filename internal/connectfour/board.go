@@ -5,16 +5,19 @@ import "errors"
 const (
 	DefaultBoardRows    = 6
 	DefaultBoardColumns = 7
+	WinLength           = 4
 
 	winWeight    = 1000
 	centerWeight = 5
 )
 
-var ErrInvalidColumn = errors.New("invalid column")
+var ErrInvalidMove = errors.New("invalid move")
 
 type Board struct {
 	Cells        [][]rune
-	winningCells [][2]int // Add this field to store winning cell coordinates
+	heights      []int
+	lastMove     [2]int
+	winningCells [][2]int
 }
 
 func NewBoard(rows, cols int) *Board {
@@ -22,76 +25,87 @@ func NewBoard(rows, cols int) *Board {
 	for i := range cells {
 		cells[i] = make([]rune, cols)
 	}
-	return &Board{Cells: cells}
+	return &Board{
+		Cells:   cells,
+		heights: make([]int, cols),
+	}
 }
 
 func (b *Board) Copy() *Board {
-	board := NewBoard(b.NumRows(), b.NumCols())
-	for i, row := range b.Cells {
-		copy(board.Cells[i], row)
+	newBoard := &Board{
+		Cells:        make([][]rune, len(b.Cells)),
+		heights:      make([]int, len(b.heights)),
+		lastMove:     b.lastMove,
+		winningCells: make([][2]int, len(b.winningCells)),
 	}
-	return board
+
+	for i, row := range b.Cells {
+		newBoard.Cells[i] = make([]rune, len(row))
+		copy(newBoard.Cells[i], row)
+	}
+	copy(newBoard.heights, b.heights)
+	copy(newBoard.winningCells, b.winningCells)
+
+	return newBoard
 }
 
-func (b *Board) Insert(token rune, column int) error {
-	if b.NumRows() == 0 {
-		return errors.New("board has no rows")
+func (b *Board) Insert(token rune, col int) error {
+	if col < 0 || col >= len(b.Cells[0]) {
+		return ErrInvalidMove
 	}
 
-	if column >= len(b.Cells[0]) {
-		return ErrInvalidColumn
+	if b.heights[col] >= len(b.Cells) {
+		return ErrInvalidMove
 	}
 
-	// insert the token in the first empty row in the column
-	for i := b.NumRows() - 1; i >= 0; i-- {
-		if b.Cells[i][column] == 0 {
-			b.Cells[i][column] = token
-			return nil
-		}
-	}
-	return ErrInvalidColumn
+	row := len(b.Cells) - 1 - b.heights[col]
+	b.Cells[row][col] = token
+	b.heights[col]++
+	b.lastMove = [2]int{row, col}
+	b.winningCells = nil // reset winning cells as the board state has changed
+
+	return nil
 }
 
 func (b *Board) CheckWin(token rune) bool {
-	b.winningCells = nil // Reset winning Cells before checking
+	row, col := b.lastMove[0], b.lastMove[1]
 
-	// check rows
-	for i := 0; i < b.NumRows(); i++ {
-		for j := 0; j <= b.NumCols()-4; j++ {
-			if b.Cells[i][j] == token && b.Cells[i][j+1] == token && b.Cells[i][j+2] == token && b.Cells[i][j+3] == token {
-				b.winningCells = [][2]int{{i, j}, {i, j + 1}, {i, j + 2}, {i, j + 3}}
-				return true
+	// If the last move wasn't made by the token we're checking, return false immediately
+	if b.Cells[row][col] != token {
+		return false
+	}
+
+	directions := [][2]int{{0, 1}, {1, 0}, {1, 1}, {1, -1}}
+	for _, dir := range directions {
+		count := 1
+		winningCells := [][2]int{{row, col}}
+
+		// check in positive direction
+		for i := 1; i < WinLength; i++ {
+			r, c := row+i*dir[0], col+i*dir[1]
+			if !b.isValidCell(r, c) || b.Cells[r][c] != token {
+				break
 			}
+			count++
+			winningCells = append(winningCells, [2]int{r, c})
+		}
+
+		// check in negative direction
+		for i := 1; i < WinLength; i++ {
+			r, c := row-i*dir[0], col-i*dir[1]
+			if !b.isValidCell(r, c) || b.Cells[r][c] != token {
+				break
+			}
+			count++
+			winningCells = append(winningCells, [2]int{r, c})
+		}
+
+		if count >= WinLength {
+			b.winningCells = winningCells
+			return true
 		}
 	}
-	// check columns
-	for i := 0; i <= b.NumRows()-4; i++ {
-		for j := 0; j < b.NumCols(); j++ {
-			if b.Cells[i][j] == token && b.Cells[i+1][j] == token && b.Cells[i+2][j] == token && b.Cells[i+3][j] == token {
-				b.winningCells = [][2]int{{i, j}, {i + 1, j}, {i + 2, j}, {i + 3, j}}
-				return true
-			}
-		}
-	}
-	// check diagonals (top-left to bottom-right)
-	for i := 0; i <= b.NumRows()-4; i++ {
-		for j := 0; j <= b.NumCols()-4; j++ {
-			if b.Cells[i][j] == token && b.Cells[i+1][j+1] == token && b.Cells[i+2][j+2] == token && b.Cells[i+3][j+3] == token {
-				b.winningCells = [][2]int{{i, j}, {i + 1, j + 1}, {i + 2, j + 2}, {i + 3, j + 3}}
-				return true
-			}
-		}
-	}
-	// check diagonals (bottom-left to top-right)
-	for i := 3; i < b.NumRows(); i++ {
-		for j := 0; j <= b.NumCols()-4; j++ {
-			if b.Cells[i][j] == token && b.Cells[i-1][j+1] == token && b.Cells[i-2][j+2] == token && b.Cells[i-3][j+3] == token {
-				b.winningCells = [][2]int{{i, j}, {i - 1, j + 1}, {i - 2, j + 2}, {i - 3, j + 3}}
-				return true
-			}
-		}
-	}
-	//b.winningCells = nil
+
 	return false
 }
 
@@ -129,13 +143,8 @@ func (b *Board) IsColumnFull(col int) bool {
 }
 
 func (b *Board) IsFull() bool {
-	if b.NumRows() == 0 || b.NumCols() == 0 {
-		return true
-	}
-
-	// check the first row for any open slots
-	for _, col := range b.Cells[0] {
-		if col == 0 {
+	for _, height := range b.heights {
+		if height < len(b.Cells) {
 			return false
 		}
 	}
@@ -143,22 +152,25 @@ func (b *Board) IsFull() bool {
 }
 
 func (b *Board) IsWinningCell(row, col int) bool {
-	if b.winningCells == nil {
+	// if there are no winning cells, return false immediately
+	if len(b.winningCells) == 0 {
 		return false
 	}
 
+	// check if the given cell is in the winning cells slice
 	for _, cell := range b.winningCells {
 		if cell[0] == row && cell[1] == col {
 			return true
 		}
 	}
+
 	return false
 }
 
 func (b *Board) Evaluate(token, opToken rune) float64 {
 	var score float64
 
-	// Check for win/loss
+	// check for win/loss
 	if b.CheckWin(token) {
 		return winWeight
 	}
@@ -166,7 +178,7 @@ func (b *Board) Evaluate(token, opToken rune) float64 {
 		return -winWeight
 	}
 
-	// Evaluate center control
+	// evaluate center control
 	center := b.NumCols() / 2
 	centerCount := 0
 	for row := 0; row < b.NumRows(); row++ {
@@ -176,7 +188,7 @@ func (b *Board) Evaluate(token, opToken rune) float64 {
 	}
 	score += float64(centerCount * centerWeight)
 
-	// Evaluate potential threats
+	// evaluate potential threats
 	score += b.evaluateThreats(token)
 	score -= b.evaluateThreats(opToken)
 	return score
@@ -259,6 +271,10 @@ func (b *Board) evaluateWindow(window []rune, token rune) float64 {
 	}
 
 	return 0
+}
+
+func (b *Board) isValidCell(row, col int) bool {
+	return row >= 0 && row < len(b.Cells) && col >= 0 && col < len(b.Cells[0])
 }
 
 func (b *Board) validColumns() []int {
