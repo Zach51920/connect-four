@@ -1,27 +1,33 @@
 package server
 
 import (
+	"github.com/Zach51920/connect-four/internal/config"
 	"github.com/Zach51920/connect-four/internal/handlers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
 
 type Server struct {
-	addr   string
 	router *gin.Engine
+	config *config.ServerConfig
 }
 
-func New(addr string) *Server {
-	return &Server{addr: addr}
+func New(cfg *config.ServerConfig) *Server {
+	return &Server{config: cfg}
 }
 
 func (s *Server) init() error {
-	r := gin.Default()
+	// initialize gin router
+	gin.SetMode(s.config.ParseGinMode())
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(logMiddleware)
 
 	// init cors
 	corsConfig := cors.DefaultConfig()
@@ -44,9 +50,8 @@ func (s *Server) init() error {
 	session := sessions.Sessions("connect_four", store)
 	r.Use(session)
 
-	// register middlewares
+	// register session middleware
 	r.Use(sessionMiddleware)
-	r.Use(logMiddleware)
 
 	// register handlers
 	handle := handlers.New()
@@ -67,5 +72,6 @@ func (s *Server) Run() error {
 	if err := s.init(); err != nil {
 		return err
 	}
-	return s.router.Run(s.addr)
+	slog.Info("Starting server...")
+	return s.router.Run(s.config.Address)
 }
