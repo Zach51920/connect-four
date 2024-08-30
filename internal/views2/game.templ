@@ -7,6 +7,7 @@ import (
 
 templ Game(game *connectfour.Game) {
     @Root() {
+        @SettingsIcon()
         <div id="game-container" class="flex flex-col justify-center items-center min-h-screen">
             <h1 class="text-2xl md:text-3xl lg:text-5xl font-bold text-center mb-8">Connect 4</h1>
             <div class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -51,6 +52,7 @@ templ Game(game *connectfour.Game) {
             setupSSE();  // Call it immediately as well
         </script>
     }
+    @SettingsModal(game)
 }
 
 templ ScoreCard(game *connectfour.Game) {
