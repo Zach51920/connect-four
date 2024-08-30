@@ -57,7 +57,7 @@ templ dropZone(game *connectfour.Game, board connectfour.Board) {
                             class="text-2xl md:text-3xl text-accent hover:animate-bounce transition-all duration-500"
                             >▼</button>
                     } else {
-                         <button class="text-2xl md:text-3xl text-accent/50 btn-disabled btn-">▼</button>
+                         <button class="text-2xl md:text-3xl text-accent/50 btn-disabled">▼</button>
                     }
                 </div>
             }
@@ -67,25 +67,8 @@ templ dropZone(game *connectfour.Game, board connectfour.Board) {
 
 templ playControls(game *connectfour.Game) {
     if !game.HasHuman() {
-            if game.State == connectfour.GameStateNew || game.State == connectfour.GameStateStopped {
-                <div class="flex justify-center space-x-4 mt-6">
-                    <button
-                        class="btn btn-accent btn-lg text-white rounded-full w-full shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center"
-                        hx-post="/game/move"
-                        hx-target=""
-                    >Start</button>
-                </div>
-            } else if game.InProgress() {
-                <div class="flex justify-center space-x-4 mt-6">
-                    <button
-                        class="btn btn-accent btn-lg text-white rounded-full w-full shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center"
-                        hx-post="/game/stop"
-                        hx-target=""
-                    >Stop</button>
-                </div>
-            }
+        @botGameControls(game)
     }
-
     <div class="flex justify-center space-x-4 mt-6">
         <button
             class="btn btn-circle btn-info btn-outline border-2 btn-lg text-white shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center"
@@ -113,11 +96,31 @@ templ playControls(game *connectfour.Game) {
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            if game.InProgress() {
+            if game.InProgress() || game.State == connectfour.GameStateStopped {
                 Restart
             } else {
                 Play Again
             }
         </button>
     </div>
+}
+
+templ botGameControls(game *connectfour.Game) {
+    if game.State == connectfour.GameStateNew || game.State == connectfour.GameStateStopped {
+        <div class="flex justify-center space-x-4 mt-6">
+            <button
+                class="btn btn-accent btn-lg text-white rounded-full w-full shadow-md transition-none hover:shadow-lg flex items-center"
+                hx-post="/game/move"
+                hx-target=""
+            >Start</button>
+        </div>
+    } else if game.InProgress() {
+        <div class="flex justify-center space-x-4 mt-6">
+            <button
+                class="btn btn-accent btn-lg text-white rounded-full w-full shadow-md transition-none hover:scale-105 hover:shadow-lg flex items-center"
+                hx-post="/game/stop"
+                hx-target=""
+            >Stop</button>
+        </div>
+    }
 }
