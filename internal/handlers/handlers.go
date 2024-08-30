@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/Zach51920/connect-four/internal/connectfour"
 	"github.com/Zach51920/connect-four/internal/sessions"
-	"github.com/Zach51920/connect-four/internal/views2"
+	"github.com/Zach51920/connect-four/internal/views"
 	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
 	"log/slog"
@@ -72,6 +72,17 @@ func (h *Handlers) CreateGame(c *gin.Context) {
 	}
 }
 
+func (h *Handlers) GetGame(c *gin.Context) {
+	sessionID := c.GetString("session_id")
+	sess, ok := h.sessions.Get(sessionID)
+	if !ok || sess == nil || sess.Game == nil {
+		h.handleCriticalErr(c, "Failed to get active game")
+		return
+	}
+	sess.CloseStream()
+	render(c, views.Game(sess.Game))
+}
+
 func (h *Handlers) StreamGame(c *gin.Context) {
 	sessionID := c.GetString("session_id")
 	sess, ok := h.sessions.Get(sessionID)
@@ -101,8 +112,10 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 		return
 	}
 
-	// the main game loop
 	game := sess.Game
+	game.Resume() // if the game was paused, playing a move should automatically resume game
+
+	// the main game loop
 	humanMoved := false
 	for game.InProgress() {
 		player := game.Turns.Current()
@@ -130,6 +143,7 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 			timer := time.NewTimer(500 * time.Millisecond)
 			bot.MakeBestMove(game.Board)
 			<-timer.C
+			timer.Stop()
 		}
 
 		// refresh board and session
@@ -142,7 +156,44 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 }
 
 func (h *Handlers) SetDifficulty(c *gin.Context) {
+	sessionID := c.GetString("session_id")
+	sess, ok := h.sessions.Get(sessionID)
+	if !ok || sess == nil || sess.Game == nil {
+		h.handleCriticalErr(c, "Failed to get active game")
+		return
+	}
 
+	var req SetDifficultyRequest
+	if err := c.ShouldBind(&req); err != nil {
+		slog.Error("failed to bind request", "error", err)
+		h.handleError(c, "An unexpected error occurred")
+		return
+	}
+
+	for _, player := range sess.Game.Players {
+		if player.ID() != req.ID {
+			continue
+		}
+
+		bot, ok := player.(*connectfour.BotPlayer)
+		if !ok {
+			h.handleError(c, "The targeted player is not a bot.")
+			return
+		}
+		slog.Debug("Setting bot difficulty", "difficulty", req.Difficulty, "bot", bot.ID())
+		bot.Strategy.SetSkill(req.Difficulty)
+		break
+	}
+}
+
+func (h *Handlers) StopGame(c *gin.Context) {
+	sessionID := c.GetString("session_id")
+	sess, ok := h.sessions.Get(sessionID)
+	if !ok || sess == nil || sess.Game == nil {
+		h.handleCriticalErr(c, "Failed to get active game")
+		return
+	}
+	sess.Game.Stop()
 }
 
 func render(c *gin.Context, component templ.Component) {

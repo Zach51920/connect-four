@@ -13,3 +13,8 @@ type MakeMoveRequest struct {
 type CreateGameRequest struct {
 	Type string `form:"game_type"`
 }
+
+type SetDifficultyRequest struct {
+	Difficulty int    `form:"difficulty"`
+	ID         string `form:"id"`
+}

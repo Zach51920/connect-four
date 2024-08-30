@@ -51,11 +51,13 @@ func (s *Server) init() error {
 	// register handlers
 	handle := handlers.New()
 	r.GET("/", handle.Home)
+	r.GET("/game", handle.GetGame)
 	r.POST("/game", handle.CreateGame)
 	r.GET("/game/stream", handle.StreamGame)
 	r.POST("/game/move", handle.MakeMove)
 	r.POST("/game/difficulty", handle.SetDifficulty)
 	r.POST("/game/restart", handle.RestartGame)
+	r.POST("/game/stop", handle.StopGame)
 
 	s.router = r
 	return nil

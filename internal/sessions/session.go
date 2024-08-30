@@ -3,14 +3,12 @@ package sessions
 import (
 	"fmt"
 	"github.com/Zach51920/connect-four/internal/connectfour"
-	views "github.com/Zach51920/connect-four/internal/views2"
+	views "github.com/Zach51920/connect-four/internal/views"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"strings"
 	"time"
 )
-
-const StreamRefreshInterval = 10 * time.Second
 
 type Session struct {
 	ID       string
@@ -63,9 +61,6 @@ func (s *Session) Stream(c *gin.Context) {
 	}
 	slog.Debug("SSE connection established", "session_id", s.ID)
 
-	ticker := time.NewTicker(StreamRefreshInterval)
-	defer ticker.Stop()
-
 	for {
 		select {
 		case <-s.shutdownCh:
@@ -74,8 +69,6 @@ func (s *Session) Stream(c *gin.Context) {
 		case <-closeCh:
 			slog.Debug("Client closed connection", "session_id", s.ID)
 			return
-		case <-ticker.C:
-			s.render(c)
 		case <-s.refreshCh:
 			s.render(c)
 		}

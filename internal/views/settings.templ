@@ -5,7 +5,6 @@ import (
     "github.com/Zach51920/connect-four/internal/connectfour"
 )
 
-
 templ SettingsIcon() {
     <div class="absolute top-4 right-4">
         <label for="settings-modal" class="btn btn-ghost btn-circle">
@@ -24,10 +23,9 @@ templ SettingsModal(game *connectfour.Game) {
             <h3 class="font-bold text-lg mb-4">Settings</h3>
             for _, player := range game.Players {
                 if bot, ok := player.(*connectfour.BotPlayer); ok {
-                    @botDifficulty(bot)
+                    @minimaxBotControls(bot)
                 }
             }
-            <p class="text-sm text-warning mt-4">Note: Calculations may be slow at higher intelligence levels</p>
             <div class="modal-action">
                 <label for="settings-modal" class="btn">Close</label>
             </div>
@@ -35,7 +33,7 @@ templ SettingsModal(game *connectfour.Game) {
     </div>
 }
 
-templ botDifficulty(bot *connectfour.BotPlayer) {
+templ minimaxBotControls(bot *connectfour.BotPlayer) {
     <div class="form-control mb-4">
         <label class="label">
             <span class="label-text font-semibold">Bot Intelligence</span>
@@ -58,5 +56,5 @@ templ botDifficulty(bot *connectfour.BotPlayer) {
             <span>Expert</span>
         </div>
     </div>
+    <p class="text-sm text-warning mt-4">Note: Bot calculations may be slow at higher intelligence levels</p>
 }
-

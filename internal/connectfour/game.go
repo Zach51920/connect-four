@@ -11,6 +11,7 @@ const (
 	GameStateOngoing
 	GameStateWin
 	GameStateDraw
+	GameStateStopped
 	GameStateCancelled
 )
 
@@ -58,8 +59,8 @@ func (g *Game) Restart() {
 }
 
 func (g *Game) RefreshState() GameState {
-	if g.State == GameStateCancelled {
-		return GameStateCancelled
+	if g.State == GameStateCancelled || g.State == GameStateStopped {
+		return g.State
 	}
 
 	g.State = GameStateOngoing
@@ -87,7 +88,16 @@ func (g *Game) HasHuman() bool {
 }
 
 func (g *Game) InProgress() bool {
-	return g.State != GameStateDraw && g.State != GameStateWin && g.State != GameStateCancelled
+	return g.State == GameStateNew || g.State == GameStateOngoing
+}
+
+func (g *Game) Stop() {
+	g.State = GameStateStopped
+}
+
+func (g *Game) Resume() {
+	g.State = GameStateNew
+	g.RefreshState()
 }
 
 func (g *Game) Cancel() {
