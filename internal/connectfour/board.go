@@ -49,13 +49,13 @@ func (b *Board) Copy() *Board {
 	return newBoard
 }
 
-func (b *Board) Insert(token rune, col int) error {
+func (b *Board) Insert(token rune, col int) *Board {
 	if col < 0 || col >= len(b.Cells[0]) {
-		return ErrInvalidMove
+		return b
 	}
 
 	if b.heights[col] >= len(b.Cells) {
-		return ErrInvalidMove
+		return b
 	}
 
 	row := len(b.Cells) - 1 - b.heights[col]
@@ -64,7 +64,7 @@ func (b *Board) Insert(token rune, col int) error {
 	b.lastMove = [2]int{row, col}
 	b.winningCells = nil // reset winning cells as the board state has changed
 
-	return nil
+	return b
 }
 
 func (b *Board) CheckWin(token rune) bool {

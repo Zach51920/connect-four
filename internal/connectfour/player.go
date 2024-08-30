@@ -64,14 +64,12 @@ func (p *BasePlayer) IncWins() { p.wins++ }
 func (p *BasePlayer) Reset() *BasePlayer { p.score = 0; return p }
 
 func (p *BasePlayer) MakeMove(board *Board, col int) error {
-	if board.IsFull() {
-		return nil
+	if board.IsColumnFull(col) {
+		return ErrInvalidMove
 	}
 
 	slog.Debug("making move", "col", col, "player", p.name)
-	if err := board.Insert(p.token, col); err != nil {
-		return err
-	}
+	board.Insert(p.token, col)
 	p.turn++
 
 	// calculate the players score /100

@@ -1,8 +1,15 @@
 package connectfour
 
-import "math"
+import (
+	"math"
+	"math/rand"
+)
 
-const DefaultMinimaxDepth = 6
+const (
+	DefaultMinimaxDepth = 6
+	RandomnessFactor    = 0.1
+	MistakeFrequency    = 15 // every 15 * depth allow the bot to make a mistake
+)
 
 func NewMinimaxBot(token rune) *BotPlayer {
 	return &BotPlayer{
@@ -23,33 +30,44 @@ func (p *BotPlayer) MakeBestMove(board *Board) {
 }
 
 func (m *MinimaxStrat) Suggest(board *Board, token rune) int {
-	bestScore := math.Inf(-1)
 	bestCol := -1
+	bestScore := math.Inf(-1)
 	alpha := math.Inf(-1)
 	beta := math.Inf(1)
 	opToken := tokenSwitch[token]
 
-	// Check for immediate win
-	col, isWin := m.isWinningTurn(board, token)
-	if isWin {
+	// bots with a depth < 7 have a chance to make mistakes
+	if m.maxDepth < 7 {
+		freq := MistakeFrequency * m.maxDepth
+		if rand.Intn(freq) == 0 {
+			// make a mistake, return random column
+			validCols := board.validColumns()
+			col := validCols[rand.Intn(len(validCols))]
+			return col
+		}
+	}
+
+	// Check for immediate win or block
+	if col, isWin := m.isWinningTurn(board, token); isWin {
 		return col
 	}
-	// Check for opponent's immediate win and block it
-	col, isWin = m.isWinningTurn(board, opToken)
-	if isWin {
+	if col, isWin := m.isWinningTurn(board, opToken); isWin {
 		return col
 	}
 
-	// If no immediate threat, proceed with minimax
-	for _, col = range board.validColumns() {
-		tmpBoard := board.Copy()
-		_ = tmpBoard.Insert(token, col)
-
+	for _, col := range board.validColumns() {
+		tmpBoard := board.Copy().Insert(token, col)
 		score := m.minimax(tmpBoard, token, opToken, m.maxDepth-1, false, alpha, beta)
+
+		// Add randomness, smarter bots are less random
+		randWeight := 1 - RandomnessFactor*float64(m.maxDepth)
+		score += rand.Float64() * randWeight
+
 		if score > bestScore {
 			bestScore = score
 			bestCol = col
 		}
+
 		alpha = math.Max(alpha, score)
 		if beta <= alpha {
 			break
