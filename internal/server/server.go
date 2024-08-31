@@ -63,6 +63,7 @@ func (s *Server) init() error {
 	r.POST("/game/difficulty", handle.SetDifficulty)
 	r.POST("/game/restart", handle.RestartGame)
 	r.POST("/game/stop", handle.StopGame)
+	r.GET("/settings", handle.Settings)
 
 	s.router = r
 	return nil

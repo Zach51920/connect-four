@@ -1,41 +1,73 @@
 package views
 
 templ ErrorToast(message string) {
-    <div class="toast toast-top toast-end animate__animated animate_fast animate__fadeInRight">
-        <div class="alert alert-error animate__animated animate_fast animate__delay-5s animate__fadeOutRight">
-            <span>{ message }</span>
+    <div class="fixed top-0 right-0 z-50 p-2 w-full sm:w-auto sm:max-w-sm md:max-w-md animate__animated animate_fast animate__fadeInRight">
+        <div class="alert alert-error shadow-lg animate__animated animate_fast animate__delay-5s animate__fadeOutRight">
+            <div class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-4 w-4 sm:h-6 sm:w-6 mr-2" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span class="text-xs sm:text-sm md:text-base break-words">{ message }</span>
+            </div>
         </div>
     </div>
 }
 
 templ WarningToast(message string) {
-    <div class="toast toast-top toast-end animate__animated animate_fast animate__fadeInRight">
-        <div class="alert alert-warning animate__animated animate_fast animate__delay-5s animate__fadeOutRight">
-            <span>{ message }</span>
+    <div class="fixed top-0 right-0 z-50 p-2 w-full sm:w-auto sm:max-w-sm md:max-w-md animate__animated animate_fast animate__fadeInRight">
+        <div class="alert alert-warning shadow-lg animate__animated animate_fast animate__delay-5s animate__fadeOutRight">
+            <div class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-4 w-4 sm:h-6 sm:w-6 mr-2" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span class="text-xs sm:text-sm md:text-base break-words">{ message }</span>
+            </div>
         </div>
     </div>
-}
-
-templ Winner(winner string) {
-    @MessageOverlay() {
-        <span class="mr-2">🏆</span> { winner } WINS!
-    }
-}
-
-templ Stalemate() {
-    @MessageOverlay() {
-        <span class="mr-2">⚖️</span> DRAW!
-    }
 }
 
 templ MessageOverlay() {
     <input type="checkbox" checked="checked" id="message-overlay" class="modal-toggle" />
     <div class="modal">
-        <div class="modal-box w-11/12 max-w-md animate__animated animate__backInDown animate__faster bg-gray-500/10 rounded-2xl shadow-lg mx-auto my-8">
-            <h3 class="font-bold text-white text-2xl flex items-center justify-center animate__animated animate__pulse animate__infinite">
+        <div class="modal-box w-11/12 max-w-sm sm:max-w-md animate__animated animate__backInDown animate__faster bg-gray-500/10 rounded-2xl shadow-lg mx-auto my-4 sm:my-8 p-4 sm:p-6">
+            <h3 class="font-bold text-white text-xl sm:text-2xl flex items-center justify-center animate__animated animate__pulse animate__infinite">
                 { children... }
             </h3>
         </div>
         <label class="modal-backdrop" for="message-overlay"></label>
     </div>
+}
+
+templ glowButtonPost(text string, icon templ.Component, hxPost, hxTarget, hxTrigger string) {
+    <button
+        class="glow-btn relative inline-block rounded-full text-white font-medium text-base sm:text-lg md:text-xl uppercase tracking-wider no-underline w-full"
+        hx-post={hxPost}
+        hx-target={hxTarget}
+        hx-trigger={hxTrigger}>
+        <span class="btn__inner block p-px relative z-10 overflow-hidden rounded-full">
+            <span class="btn__content block overflow-hidden py-3 sm:py-4 px-6 sm:px-8 rounded-full">
+                <span class="btn__content__background absolute inset-[-100px] block"></span>
+                <span class="relative z-20 flex items-center justify-center">
+                    @icon
+                    {text}
+                </span>
+            </span>
+        </span>
+        <span class="btn__background absolute inset-0 block rounded-full"></span>
+    </button>
+}
+
+templ glowButtonGet(text string, icon templ.Component, hxGet, hxTarget, hxTrigger string) {
+    <button
+        class="glow-btn relative inline-block rounded-full text-white font-medium text-base sm:text-lg md:text-xl uppercase tracking-wider no-underline w-full"
+        hx-get={hxGet}
+        hx-target={hxTarget}
+        hx-trigger={hxTrigger}>
+        <span class="btn__inner block p-px relative z-10 overflow-hidden rounded-full">
+            <span class="btn__content block overflow-hidden py-3 sm:py-4 px-6 sm:px-8 rounded-full">
+                <span class="btn__content__background absolute inset-[-100px] block"></span>
+                <span class="relative z-20 flex items-center justify-center">
+                    @icon
+                    {text}
+                </span>
+            </span>
+        </span>
+        <span class="btn__background absolute inset-0 block rounded-full"></span>
+    </button>
 }
