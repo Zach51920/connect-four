@@ -1,18 +1,10 @@
 package connectfour
 
 import (
-	"fmt"
 	"github.com/google/uuid"
 	"log/slog"
 	"math"
-	"math/rand"
 )
-
-type Strategy interface {
-	Suggest(board *Board, token rune) int
-	SetSkill(skill int)
-	Skill() int
-}
 
 type Player interface {
 	Name() string
@@ -24,7 +16,7 @@ type Player interface {
 	SetToken(token rune) *BasePlayer
 	Reset() *BasePlayer
 	Wins() int
-	IncWins() // Add this method to the interface
+	IncWins()
 }
 
 type BasePlayer struct {
@@ -36,17 +28,22 @@ type BasePlayer struct {
 	id    string
 }
 
-func NewBasePlayer(name string, token rune) BasePlayer {
-	return BasePlayer{name: name, token: token, id: uuid.NewString()}
-}
-
 type HumanPlayer struct {
 	BasePlayer
 }
 
-type BotPlayer struct {
-	BasePlayer
-	Strategy Strategy
+func NewBasePlayer(name string, token rune) BasePlayer {
+	return BasePlayer{name: name, token: token, id: uuid.NewString()}
+}
+
+func NewHumanPlayer(name string, token rune) *HumanPlayer {
+	return &HumanPlayer{BasePlayer: NewBasePlayer(name, token)}
+}
+
+func NewHumanPlayerPair() (*HumanPlayer, *HumanPlayer) {
+	player1 := NewHumanPlayer("Player1", 'X')
+	player2 := NewHumanPlayer("Player2", 'O')
+	return player1, player2
 }
 
 func (p *BasePlayer) Name() string { return p.name }
@@ -64,14 +61,12 @@ func (p *BasePlayer) IncWins() { p.wins++ }
 func (p *BasePlayer) Reset() *BasePlayer { p.score = 0; return p }
 
 func (p *BasePlayer) MakeMove(board *Board, col int) error {
-	if board.IsFull() {
-		return nil
+	if board.IsColumnFull(col) {
+		return ErrInvalidMove
 	}
 
 	slog.Debug("making move", "col", col, "player", p.name)
-	if err := board.Insert(p.token, col); err != nil {
-		return err
-	}
+	board.Insert(p.token, col)
 	p.turn++
 
 	// calculate the players score /100
@@ -92,22 +87,3 @@ func (p *BasePlayer) MakeMove(board *Board, col int) error {
 func (p *BasePlayer) SetToken(token rune) *BasePlayer { p.token = token; return p }
 
 func (p *BasePlayer) Token() rune { return p.token }
-
-func NewHumanPlayer(name string, token rune) *HumanPlayer {
-	return &HumanPlayer{BasePlayer: NewBasePlayer(name, token)}
-}
-
-func NewHumanPlayerPair() (*HumanPlayer, *HumanPlayer) {
-	player1 := NewHumanPlayer("Player1", 'X')
-	player2 := NewHumanPlayer("Player2", 'O')
-	return player1, player2
-}
-
-func randomUsername() string {
-	adjectives := []string{"Squeaky", "Fluffy", "Snazzy", "Clumsy", "Derpy", "Zesty", "Wacky"}
-	nouns := []string{"Whale", "Pigeon", "Donut", "Panda", "Noodle", "Giraffe", "Raccoon"}
-
-	adj := adjectives[rand.Intn(len(adjectives))]
-	noun := nouns[rand.Intn(len(nouns))]
-	return fmt.Sprintf("%s %s", adj, noun)
-}

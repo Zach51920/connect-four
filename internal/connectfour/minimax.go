@@ -1,12 +1,19 @@
 package connectfour
 
-import "math"
+import (
+	"math"
+	"math/rand"
+)
 
-const DefaultMinimaxDepth = 6
+const (
+	MinimaxDefaultDepth     = 6
+	MinimaxRandomnessFactor = 0.1
+)
 
 func NewMinimaxBot(token rune) *BotPlayer {
 	return &BotPlayer{
-		Strategy:   NewMinimaxStrat(DefaultMinimaxDepth),
+		Difficulty: MinimaxDefaultDepth,
+		strategy:   NewMinimaxStrat(MinimaxDefaultDepth),
 		BasePlayer: NewBasePlayer(randomUsername(), token),
 	}
 }
@@ -17,39 +24,26 @@ func NewMinimaxStrat(depth int) *MinimaxStrat {
 	return &MinimaxStrat{maxDepth: depth}
 }
 
-func (p *BotPlayer) MakeBestMove(board *Board) {
-	col := p.Strategy.Suggest(board, p.token)
-	_ = p.MakeMove(board, col)
-}
-
 func (m *MinimaxStrat) Suggest(board *Board, token rune) int {
-	bestScore := math.Inf(-1)
 	bestCol := -1
+	bestScore := math.Inf(-1)
 	alpha := math.Inf(-1)
 	beta := math.Inf(1)
 	opToken := tokenSwitch[token]
 
-	// Check for immediate win
-	col, isWin := m.isWinningTurn(board, token)
-	if isWin {
-		return col
-	}
-	// Check for opponent's immediate win and block it
-	col, isWin = m.isWinningTurn(board, opToken)
-	if isWin {
-		return col
-	}
+	for _, col := range board.validColumns() {
+		tmpBoard := board.Copy().Insert(token, col)
+		score := m.Minimax(tmpBoard, token, opToken, m.maxDepth-1, false, alpha, beta)
 
-	// If no immediate threat, proceed with minimax
-	for _, col = range board.validColumns() {
-		tmpBoard := board.Copy()
-		_ = tmpBoard.Insert(token, col)
+		// Add randomness, smarter bots are less random
+		randWeight := 1 - MinimaxRandomnessFactor*float64(m.maxDepth)
+		score += rand.Float64() * randWeight
 
-		score := m.minimax(tmpBoard, token, opToken, m.maxDepth-1, false, alpha, beta)
 		if score > bestScore {
 			bestScore = score
 			bestCol = col
 		}
+
 		alpha = math.Max(alpha, score)
 		if beta <= alpha {
 			break
@@ -58,13 +52,7 @@ func (m *MinimaxStrat) Suggest(board *Board, token rune) int {
 	return bestCol
 }
 
-// SetSkill sets the maxDepth for the minimax algorithm
-func (m *MinimaxStrat) SetSkill(depth int) { m.maxDepth = depth }
-
-// Skill returns the max depth of the minimax algorithm
-func (m *MinimaxStrat) Skill() int { return m.maxDepth }
-
-func (m *MinimaxStrat) minimax(board *Board, token, opToken rune, depth int, isMaximizing bool, alpha, beta float64) float64 {
+func (m *MinimaxStrat) Minimax(board *Board, token, opToken rune, depth int, isMaximizing bool, alpha, beta float64) float64 {
 	if depth == 0 || board.IsFull() || board.CheckWin(token) || board.CheckWin(opToken) {
 		return board.Evaluate(token, opToken)
 	}
@@ -75,7 +63,7 @@ func (m *MinimaxStrat) minimax(board *Board, token, opToken rune, depth int, isM
 		for _, col := range validCols {
 			tmpBoard := board.Copy()
 			_ = tmpBoard.Insert(token, col)
-			eval := m.minimax(tmpBoard, token, opToken, depth-1, false, alpha, beta)
+			eval := m.Minimax(tmpBoard, token, opToken, depth-1, false, alpha, beta)
 			maxEval = math.Max(maxEval, eval)
 			alpha = math.Max(alpha, eval)
 			if beta <= alpha {
@@ -88,7 +76,7 @@ func (m *MinimaxStrat) minimax(board *Board, token, opToken rune, depth int, isM
 		for _, col := range validCols {
 			tmpBoard := board.Copy()
 			_ = tmpBoard.Insert(opToken, col)
-			eval := m.minimax(tmpBoard, token, opToken, depth-1, true, alpha, beta)
+			eval := m.Minimax(tmpBoard, token, opToken, depth-1, true, alpha, beta)
 			minEval = math.Min(minEval, eval)
 			beta = math.Min(beta, eval)
 			if beta <= alpha {
@@ -99,13 +87,4 @@ func (m *MinimaxStrat) minimax(board *Board, token, opToken rune, depth int, isM
 	}
 }
 
-func (m *MinimaxStrat) isWinningTurn(board *Board, token rune) (int, bool) {
-	for _, col := range board.validColumns() {
-		tmpBoard := board.Copy()
-		_ = tmpBoard.Insert(token, col)
-		if tmpBoard.CheckWin(token) {
-			return col, true
-		}
-	}
-	return -1, false
-}
+func (m *MinimaxStrat) SetDifficulty(depth int) { m.maxDepth = depth }

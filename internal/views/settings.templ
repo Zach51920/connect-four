@@ -43,7 +43,7 @@ templ minimaxBotControls(bot *connectfour.BotPlayer) {
             type="range"
             min="1"
             max="10"
-            value={ fmt.Sprintf("%d", bot.Strategy.Skill()) }
+            value={ fmt.Sprintf("%d", bot.Difficulty) }
             class="range range-primary"
             hx-post="/game/difficulty"
             hx-trigger="change"
