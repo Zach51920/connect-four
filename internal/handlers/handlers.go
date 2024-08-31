@@ -23,7 +23,7 @@ func (h *Handlers) Home(c *gin.Context) {
 	sessionID := c.GetString("session_id")
 	sess, _ := h.sessions.Get(sessionID)
 	if sess != nil && sess.Game != nil && sess.Game.InProgress() {
-		render(c, views.WarningToast("The active game has been cancelled"))
+		render(c, views.WarningToast("The active game has been aborted"))
 		sess.Game.Cancel()
 	}
 
@@ -148,9 +148,7 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 		// refresh board and session
 		game.RefreshState()
 		sess.Refresh()
-		if game.InProgress() {
-			game.Turns.Next()
-		}
+		game.Turns.Next()
 	}
 }
 
@@ -195,9 +193,20 @@ func (h *Handlers) StopGame(c *gin.Context) {
 	sess.Game.Stop()
 }
 
+func (h *Handlers) Settings(c *gin.Context) {
+	sessionID := c.GetString("session_id")
+	sess, ok := h.sessions.Get(sessionID)
+	if !ok || sess == nil || sess.Game == nil {
+		h.handleCriticalErr(c, "Failed to get active game")
+		return
+	}
+	render(c, views.SettingsModal(sess.Game))
+}
+
 func render(c *gin.Context, component templ.Component) {
 	if err := component.Render(c.Request.Context(), c.Writer); err != nil {
 		slog.Error("Failed to render component", "error", err)
+		_ = views.ErrorToast("An unexpected error has occurred").Render(c.Request.Context(), c.Writer)
 	}
 }
 

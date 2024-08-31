@@ -46,7 +46,7 @@ func Game(game *connectfour.Game) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div id=\"game-container\" class=\"flex flex-col justify-center items-center min-h-screen\"><h1 class=\"text-2xl md:text-3xl lg:text-5xl font-bold text-center mb-8\">Connect 4</h1><div class=\"w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-start\"><div class=\"hidden lg:block\"></div><div id=\"board-container\" class=\"flex justify-center items-center\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div id=\"game-container\" class=\"flex flex-col justify-center items-center min-h-screen\"><h1 class=\"text-2xl md:text-3xl lg:text-5xl font-bold text-white text-center mb-8\">CONNECT 4</h1><div class=\"w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-start\"><div class=\"hidden lg:block\"></div><div id=\"board-container\" class=\"flex justify-center items-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -63,10 +63,6 @@ func Game(game *connectfour.Game) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></div></div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = SettingsModal(game).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
