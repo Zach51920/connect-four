@@ -43,22 +43,11 @@ templ SettingsModal(game *connectfour.Game) {
             </div>
         </div>
     </div>
-    <script>
-        function closeModal() {
-            document.getElementById('modal-container').innerHTML = '';
-        }
-
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closeModal();
-            }
-        });
-    </script>
 }
 
 templ minimaxBotControls(bot *connectfour.BotPlayer) {
     <div class="form-control mb-4">
-        <label class="label">
+        <label class="label" for={ fmt.Sprintf("difficulty-slider-%s", bot.ID()) }>
             <span class="label-text font-semibold">Bot Intelligence</span>
             <span class="label-text-alt font-semibold">{ bot.Name() }</span>
         </label>

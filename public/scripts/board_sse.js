@@ -26,4 +26,4 @@ function setupSSE() {
 }
 
 document.addEventListener('htmx:load', setupSSE);
-setupSSE();  // Call it immediately as well
+setupSSE();
