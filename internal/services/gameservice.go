@@ -64,11 +64,17 @@ func (s *GameService) MakeMove(ctx context.Context, player connectfour.Player, g
 		return errors.New("not players turn")
 	}
 
-	// make the players move
-	if err := player.MakeMove(game.Board, col); err != nil {
-		return err
+	// insert the token
+	if game.Board.IsColumnFull(col) {
+		return connectfour.ErrInvalidMove
 	}
+	game.Board.Insert(player.Token(), col)
 	game.RefreshState()
+	player.IncTurn()
+
+	// update the players score
+	score := connectfour.CalculateScore(player, game.Board)
+	player.AddScore(score)
 
 	// todo: add move to db
 	return nil

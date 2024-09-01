@@ -1,6 +1,7 @@
 package connectfour
 
 import (
+	"math"
 	"time"
 )
 
@@ -110,4 +111,16 @@ func (g *Game) ExpectHumanInput() bool {
 	}
 	_, isHuman := g.Turns.Current().(*HumanPlayer)
 	return isHuman
+}
+
+func CalculateScore(player Player, board *Board) uint64 {
+	// calculate the players score /100
+	opToken := tokenSwitch[player.Token()]
+	eval := board.Evaluate(player.Token(), opToken)
+	clampedEval := math.Max(math.Min(eval, maxBaseScore), 0)
+
+	// exponentially increase the score based on turn
+	growthFactor := math.Pow(growthRate, float64(player.Turn()))
+	score := clampedEval * growthFactor
+	return uint64(score)
 }

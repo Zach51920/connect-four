@@ -19,14 +19,6 @@ type BotPlayer struct {
 	Difficulty int
 }
 
-func (p *BotPlayer) MakeBestMove(board *Board) {
-	bestCol := p.initialEval(board)
-	if bestCol == -1 {
-		bestCol = p.strategy.Suggest(board, p.token)
-	}
-	_ = p.MakeMove(board, bestCol)
-}
-
 func (p *BotPlayer) Evaluate(board *Board) int {
 	if col := p.initialEval(board); col != -1 {
 		return col
