@@ -65,7 +65,7 @@ func (s *Server) init() error {
 	r.Use(logMiddleware)
 
 	// register handlers
-	handle := handlers.New()
+	handle := handlers.New(provider.DB())
 	r.GET("/", handle.Home)
 	r.GET("/game", handle.GetGame)
 	r.POST("/game", handle.CreateGame)

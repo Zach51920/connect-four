@@ -27,6 +27,13 @@ func (p *BotPlayer) MakeBestMove(board *Board) {
 	_ = p.MakeMove(board, bestCol)
 }
 
+func (p *BotPlayer) Evaluate(board *Board) int {
+	if col := p.initialEval(board); col != -1 {
+		return col
+	}
+	return p.strategy.Suggest(board, p.token)
+}
+
 func (p *BotPlayer) SetDifficulty(difficulty int) {
 	p.Difficulty = difficulty
 	p.strategy.SetDifficulty(difficulty)
