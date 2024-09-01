@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/Zach51920/connect-four/internal/config"
 	"github.com/Zach51920/connect-four/internal/handlers"
 	"github.com/Zach51920/connect-four/internal/mongo"
@@ -17,8 +18,9 @@ import (
 )
 
 type Server struct {
-	router *gin.Engine
-	config *config.ServerConfig
+	router   *gin.Engine
+	config   *config.ServerConfig
+	provider *mongo.Provider
 }
 
 func New(cfg *config.ServerConfig) *Server {
@@ -27,22 +29,19 @@ func New(cfg *config.ServerConfig) *Server {
 
 func (s *Server) init() error {
 	// create dependencies
-	provider, err := mongo.NewProvider(mongo.FromEnv())
-	if err != nil {
-		slog.Error("failed to initialize mongodb provider", "error", err)
-	} else if err = provider.Ping(); err != nil {
-		slog.Error("failed to ping mongo client", "error", err)
-		_ = provider.Close()
-		provider = nil
-	}
-
 	var repo repository.Repository
-	if provider != nil {
-		slog.Info("Using mongodb repository")
+	if s.config.WithMongoDB {
+		provider, err := mongo.NewProvider(mongo.FromEnv())
+		if err != nil {
+			return fmt.Errorf("failed to initialize mongodb provider: %w", err)
+		} else if err = provider.Ping(); err != nil {
+			return fmt.Errorf("failed to ping mongo client: %w", err)
+		}
+		slog.Info("Saving moves to MongoDB")
 		repo = repository.NewMongoRepository(provider.DB())
 	} else {
-		slog.Warn("Using mock repository: games will not be saved")
-		repository.NewMockRepository()
+		slog.Info("Using mock repository")
+		repo = repository.NewMockRepository()
 	}
 	service := services.NewGameService(repo)
 	handle := handlers.New(service)
@@ -98,4 +97,8 @@ func (s *Server) Run() error {
 	}
 	slog.Info("Starting server...")
 	return s.router.Run(s.config.Address)
+}
+
+func (s *Server) Close() error {
+	return s.provider.Close()
 }

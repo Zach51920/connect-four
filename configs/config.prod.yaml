@@ -2,3 +2,4 @@ log_level: info
 server:
   address: :8080
   gin_mode: release
+  with_mongodb: true

@@ -15,8 +15,9 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Address string `yaml:"address"`
-	GinMode string `yaml:"gin_mode"`
+	Address     string `yaml:"address"`
+	GinMode     string `yaml:"gin_mode"`
+	WithMongoDB bool   `yaml:"with_mongodb"`
 }
 
 func Load(path string) *Config {
