@@ -5,16 +5,16 @@ import (
 	"errors"
 	"github.com/Zach51920/connect-four/internal/connectfour"
 	"github.com/Zach51920/connect-four/internal/models"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/Zach51920/connect-four/internal/repository"
 	"log/slog"
 )
 
 type GameService struct {
-	db *mongo.Database
+	repository repository.Repository
 }
 
-func NewGameService(db *mongo.Database) *GameService {
-	return &GameService{db: db}
+func NewGameService(repo repository.Repository) *GameService {
+	return &GameService{repository: repo}
 }
 
 func (s *GameService) CreateGame(ctx context.Context, sessionID string, req models.CreateGameRequest) (*connectfour.Game, error) {
@@ -33,8 +33,14 @@ func (s *GameService) CreateGame(ctx context.Context, sessionID string, req mode
 		return nil, errors.New("unknown game type")
 	}
 
-	// create the game and assign it to the session
-	return connectfour.NewGame(player1, player2), nil
+	// create and save the game
+	game := connectfour.NewGame(player1, player2)
+	if err := s.repository.CreateGame(game); err != nil {
+		slog.Error("failed to create game", "error", err)
+		return nil, errors.New("failed to save game")
+	}
+
+	return game, nil
 }
 
 func (s *GameService) SetDifficulty(ctx context.Context, players [2]connectfour.Player, req models.SetDifficultyRequest) error {

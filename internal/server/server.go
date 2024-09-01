@@ -5,6 +5,8 @@ import (
 	"github.com/Zach51920/connect-four/internal/config"
 	"github.com/Zach51920/connect-four/internal/handlers"
 	"github.com/Zach51920/connect-four/internal/mongo"
+	"github.com/Zach51920/connect-four/internal/repository"
+	"github.com/Zach51920/connect-four/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -25,15 +27,6 @@ func New(cfg *config.ServerConfig) *Server {
 }
 
 func (s *Server) init() error {
-	// init mongo provider
-	provider, err := mongo.NewProvider(mongo.FromEnv())
-	if err != nil {
-		return fmt.Errorf("failed to initialize mongodb provider: %w", err)
-	}
-	if err = provider.Ping(); err != nil {
-		return fmt.Errorf("failed to ping mongodb provider: %w", err)
-	}
-
 	// initialize gin router
 	gin.SetMode(s.config.ParseGinMode())
 	r := gin.New()
@@ -64,8 +57,19 @@ func (s *Server) init() error {
 	r.Use(sessionMiddleware)
 	r.Use(logMiddleware)
 
+	// create dependencies
+	provider, err := mongo.NewProvider(mongo.FromEnv())
+	if err != nil {
+		return fmt.Errorf("failed to initialize mongodb provider: %w", err)
+	}
+	if err = provider.Ping(); err != nil {
+		return fmt.Errorf("failed to ping mongodb provider: %w", err)
+	}
+	repo := repository.NewMongoRepository(provider.DB())
+	service := services.NewGameService(repo)
+	handle := handlers.New(service)
+
 	// register handlers
-	handle := handlers.New(provider.DB())
 	r.GET("/", handle.Home)
 	r.GET("/game", handle.GetGame)
 	r.POST("/game", handle.CreateGame)

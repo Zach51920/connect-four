@@ -8,7 +8,6 @@ import (
 	"github.com/Zach51920/connect-four/internal/views"
 	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
 	"log/slog"
 	"time"
 )
@@ -18,10 +17,10 @@ type Handlers struct {
 	service  *services.GameService
 }
 
-func New(db *mongo.Database) *Handlers {
+func New(service *services.GameService) *Handlers {
 	return &Handlers{
 		sessions: sessions.NewMemorySessionStore(),
-		service:  services.NewGameService(db),
+		service:  service,
 	}
 }
 
@@ -122,7 +121,7 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 			}
 
 			// make a move from the input
-			var req MakeMoveRequest
+			var req models.MakeMoveRequest
 			if err := c.ShouldBind(&req); err != nil {
 				h.handleError(c, "An unexpected error has occurred")
 				slog.Error("Failed to bind MakeMoveRequest", "error", err)
