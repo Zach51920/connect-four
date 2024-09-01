@@ -19,7 +19,7 @@ func NewMongoRepository(db *mongo.Database) *MongoRepository {
 }
 
 func (r *MongoRepository) SaveMove(ctx context.Context, game *connectfour.Game, player connectfour.Player, column int) error {
-	mongoCtx, ctxCancel := context.WithTimeout(ctx, 5*time.Second)
+	mongoCtx, ctxCancel := context.WithTimeout(ctx, time.Second)
 	defer ctxCancel()
 
 	move := Move{

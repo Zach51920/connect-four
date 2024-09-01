@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"github.com/Zach51920/connect-four/internal/config"
 	"github.com/Zach51920/connect-four/internal/handlers"
 	"github.com/Zach51920/connect-four/internal/mongo"
@@ -27,6 +26,27 @@ func New(cfg *config.ServerConfig) *Server {
 }
 
 func (s *Server) init() error {
+	// create dependencies
+	provider, err := mongo.NewProvider(mongo.FromEnv())
+	if err != nil {
+		slog.Error("failed to initialize mongodb provider", "error", err)
+	} else if err = provider.Ping(); err != nil {
+		slog.Error("failed to ping mongo client", "error", err)
+		_ = provider.Close()
+		provider = nil
+	}
+
+	var repo repository.Repository
+	if provider != nil {
+		slog.Info("Using mongodb repository")
+		repo = repository.NewMongoRepository(provider.DB())
+	} else {
+		slog.Warn("Using mock repository: games will not be saved")
+		repository.NewMockRepository()
+	}
+	service := services.NewGameService(repo)
+	handle := handlers.New(service)
+
 	// initialize gin router
 	gin.SetMode(s.config.ParseGinMode())
 	r := gin.New()
@@ -56,18 +76,6 @@ func (s *Server) init() error {
 	// register middleware
 	r.Use(sessionMiddleware)
 	r.Use(logMiddleware)
-
-	// create dependencies
-	provider, err := mongo.NewProvider(mongo.FromEnv())
-	if err != nil {
-		return fmt.Errorf("failed to initialize mongodb provider: %w", err)
-	}
-	if err = provider.Ping(); err != nil {
-		return fmt.Errorf("failed to ping mongodb provider: %w", err)
-	}
-	repo := repository.NewMongoRepository(provider.DB())
-	service := services.NewGameService(repo)
-	handle := handlers.New(service)
 
 	// register handlers
 	r.GET("/", handle.Home)

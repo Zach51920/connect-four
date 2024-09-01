@@ -32,7 +32,7 @@ func NewProvider(config *Config) (*Provider, error) {
 		return nil, errors.New("config is nil")
 	}
 
-	ctx, ctxCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer ctxCancel()
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
@@ -60,9 +60,12 @@ func (p *Provider) DB() *mongo.Database {
 }
 
 func (p *Provider) Ping() error {
+	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second)
+	defer ctxCancel()
+
 	var result bson.D
 	return p.DB().
-		RunCommand(context.TODO(), bson.D{{"ping", 1}}).
+		RunCommand(ctx, bson.D{{"ping", 1}}).
 		Decode(&result)
 }
 
