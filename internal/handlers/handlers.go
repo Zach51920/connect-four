@@ -52,7 +52,7 @@ func (h *Handlers) CreateGame(c *gin.Context) {
 	}
 
 	// create the game and add assign it to our session
-	game, err := h.service.CreateGame(c, sessionID, req)
+	game, err := h.service.CreateGame(req)
 	if err != nil {
 		h.handleCriticalErr(c, "Failed to create game")
 		return
@@ -163,7 +163,7 @@ func (h *Handlers) SetDifficulty(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.SetDifficulty(c, sess.Game.Players, req); err != nil {
+	if err := h.service.SetDifficulty(sess.Game.Players, req); err != nil {
 		h.handleError(c, "Failed to set Difficulty")
 		return
 	}

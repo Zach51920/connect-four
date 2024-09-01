@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
@@ -19,10 +18,11 @@ type Move struct {
 }
 
 type Game struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	Players   [2]Player          `bson:"players"`
-	Moves     []Move             `bson:"moves"`
-	Winner    *Player            `bson:"winner,omitempty"`
-	MoveCount int                `bson:"move_count"`
-	Timestamp time.Time          `bson:"timestamp"`
+	ID        string    `bson:"_id,omitempty"`
+	Player1   Player    `bson:"player1"`
+	Player2   Player    `bson:"player2"`
+	Moves     []Move    `bson:"moves"`
+	Winner    *Player   `bson:"winner,omitempty"`
+	MoveCount int       `bson:"move_count"`
+	Timestamp time.Time `bson:"timestamp"`
 }

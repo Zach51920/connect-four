@@ -17,7 +17,7 @@ func NewGameService(repo repository.Repository) *GameService {
 	return &GameService{repository: repo}
 }
 
-func (s *GameService) CreateGame(ctx context.Context, sessionID string, req models.CreateGameRequest) (*connectfour.Game, error) {
+func (s *GameService) CreateGame(req models.CreateGameRequest) (*connectfour.Game, error) {
 	// create the players according to the game type
 	var player1, player2 connectfour.Player
 	switch req.Type {
@@ -35,15 +35,10 @@ func (s *GameService) CreateGame(ctx context.Context, sessionID string, req mode
 
 	// create and save the game
 	game := connectfour.NewGame(player1, player2)
-	if err := s.repository.CreateGame(game); err != nil {
-		slog.Error("failed to create game", "error", err)
-		return nil, errors.New("failed to save game")
-	}
-
 	return game, nil
 }
 
-func (s *GameService) SetDifficulty(ctx context.Context, players [2]connectfour.Player, req models.SetDifficultyRequest) error {
+func (s *GameService) SetDifficulty(players [2]connectfour.Player, req models.SetDifficultyRequest) error {
 	for _, player := range players {
 		if player.ID() != req.ID {
 			continue
@@ -76,7 +71,7 @@ func (s *GameService) MakeMove(ctx context.Context, player connectfour.Player, g
 	score := connectfour.CalculateScore(player, game.Board)
 	player.AddScore(score)
 
-	if err := s.repository.SaveMove(game, player, col); err != nil {
+	if err := s.repository.SaveMove(ctx, game, player, col); err != nil {
 		slog.Error("failed to save move", "error", err)
 	}
 	return nil
