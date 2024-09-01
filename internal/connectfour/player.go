@@ -16,6 +16,7 @@ type Player interface {
 	Turn() int
 	IncTurn()
 	Reset() *BasePlayer
+	Strategy() string
 }
 
 type BasePlayer struct {
@@ -66,3 +67,5 @@ func (p *BasePlayer) Turn() int { return p.turn }
 func (p *BasePlayer) SetToken(token rune) *BasePlayer { p.token = token; return p }
 
 func (p *BasePlayer) Token() rune { return p.token }
+
+func (p *HumanPlayer) Strategy() string { return "HUMAN" }

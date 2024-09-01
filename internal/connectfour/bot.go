@@ -11,6 +11,7 @@ const MistakeFrequency = 15 // every 15 * depth allow the bot to make a mistake
 type Strategy interface {
 	Suggest(board *Board, token rune) int
 	SetDifficulty(skill int)
+	Name() string
 }
 
 type BotPlayer struct {
@@ -53,6 +54,8 @@ func (p *BotPlayer) initialEval(board *Board) int {
 	}
 	return -1
 }
+
+func (p *BotPlayer) Strategy() string { return p.strategy.Name() }
 
 func randomUsername() string {
 	adjectives := []string{"Squeaky", "Fluffy", "Snazzy", "Clumsy", "Derpy", "Zesty", "Wacky"}

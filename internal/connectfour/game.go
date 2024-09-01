@@ -1,6 +1,7 @@
 package connectfour
 
 import (
+	"github.com/google/uuid"
 	"math"
 )
 
@@ -24,6 +25,7 @@ const (
 var tokenSwitch = map[rune]rune{'X': 'O', 'O': 'X'}
 
 type Game struct {
+	ID               string
 	Players          [2]Player
 	Board            *Board
 	State            GameState
@@ -34,12 +36,15 @@ type Game struct {
 
 func NewGame(player1, player2 Player) *Game {
 	return &Game{
+		ID:      uuid.New().String(),
+		State:   GameStateNew,
 		Players: [2]Player{player1, player2},
 		Board:   NewBoard(DefaultBoardRows, DefaultBoardColumns),
 	}
 }
 
 func (g *Game) Restart() {
+	g.ID = uuid.New().String() // assign a new game ID so it doesn't overwrite other game saves
 	g.State = GameStateNew
 	g.Board = NewBoard(g.Board.NumRows(), g.Board.NumCols())
 	g.currentPlayerIdx = 0
