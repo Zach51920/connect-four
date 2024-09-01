@@ -70,12 +70,14 @@ func (s *GameService) MakeMove(ctx context.Context, player connectfour.Player, g
 	}
 	game.Board.Insert(player.Token(), col)
 	game.RefreshState()
-	player.IncTurn()
+	game.IncMoveCount()
 
 	// update the players score
 	score := connectfour.CalculateScore(player, game.Board)
 	player.AddScore(score)
 
-	// todo: add move to db
+	if err := s.repository.SaveMove(game, player, col); err != nil {
+		slog.Error("failed to save move", "error", err)
+	}
 	return nil
 }
