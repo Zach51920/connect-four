@@ -21,6 +21,7 @@ func main() {
 
 	// create and run the server
 	s := server.New(cfg.Server)
+	defer s.Close()
 	if err := s.Run(); err != nil {
 		log.Fatalf("Failed to start server: %s", err.Error())
 	}

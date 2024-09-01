@@ -1,7 +1,8 @@
 package connectfour
 
 import (
-	"time"
+	"github.com/google/uuid"
+	"math"
 )
 
 type GameState int
@@ -18,39 +19,36 @@ const (
 const (
 	growthRate   = 1.02
 	maxBaseScore = 100.0
+	minBaseScore = 3.0
 )
 
 var tokenSwitch = map[rune]rune{'X': 'O', 'O': 'X'}
 
-type Meta struct {
-	StartTime time.Time
-	LastMove  time.Time
-	NumMoves  int
-}
-
 type Game struct {
-	Players [2]Player
-	Turns   *TurnList
-	Board   *Board
-	Meta    *Meta
-	State   GameState
-	Winner  Player
+	ID               string
+	Players          [2]Player
+	Board            *Board
+	State            GameState
+	Winner           Player
+	MoveCount        int
+	currentPlayerIdx int
 }
 
 func NewGame(player1, player2 Player) *Game {
-	game := &Game{
+	return &Game{
+		ID:      uuid.New().String(),
+		State:   GameStateNew,
 		Players: [2]Player{player1, player2},
 		Board:   NewBoard(DefaultBoardRows, DefaultBoardColumns),
-		Meta:    &Meta{StartTime: time.Now(), LastMove: time.Now()},
 	}
-	game.Turns = NewTurnList(game)
-	return game
 }
 
 func (g *Game) Restart() {
+	g.ID = uuid.New().String() // assign a new game ID so it doesn't overwrite other game saves
 	g.State = GameStateNew
 	g.Board = NewBoard(g.Board.NumRows(), g.Board.NumCols())
-	g.Turns.Reset()
+	g.currentPlayerIdx = 0
+	g.MoveCount = 0
 	g.Winner = nil
 
 	for _, player := range g.Players {
@@ -108,6 +106,29 @@ func (g *Game) ExpectHumanInput() bool {
 	if g.State == GameStateDraw || g.State == GameStateWin {
 		return false
 	}
-	_, isHuman := g.Turns.Current().(*HumanPlayer)
+	_, isHuman := g.CurrentPlayer().(*HumanPlayer)
 	return isHuman
+}
+
+func (g *Game) CurrentPlayer() Player {
+	return g.Players[g.currentPlayerIdx]
+}
+
+func (g *Game) NextPlayer() Player {
+	g.currentPlayerIdx = 1 - g.currentPlayerIdx // Toggle between 0 and 1
+	return g.CurrentPlayer()
+}
+
+func (g *Game) IncMoveCount() { g.MoveCount++ }
+
+func CalculateScore(player Player, board *Board) uint64 {
+	// calculate the players score /100
+	opToken := tokenSwitch[player.Token()]
+	eval := board.Evaluate(player.Token(), opToken)
+	clampedEval := math.Max(math.Min(eval, maxBaseScore), minBaseScore)
+
+	// exponentially increase the score based on turn
+	growthFactor := math.Pow(growthRate, float64(player.Turn()))
+	score := clampedEval * growthFactor
+	return uint64(score)
 }

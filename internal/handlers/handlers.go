@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"github.com/Zach51920/connect-four/internal/connectfour"
+	"github.com/Zach51920/connect-four/internal/models"
+	"github.com/Zach51920/connect-four/internal/services"
 	"github.com/Zach51920/connect-four/internal/sessions"
 	"github.com/Zach51920/connect-four/internal/views"
 	"github.com/a-h/templ"
@@ -12,10 +14,14 @@ import (
 
 type Handlers struct {
 	sessions sessions.Store
+	service  *services.GameService
 }
 
-func New() *Handlers {
-	return &Handlers{sessions: sessions.NewMemorySessionStore()}
+func New(service *services.GameService) *Handlers {
+	return &Handlers{
+		sessions: sessions.NewMemorySessionStore(),
+		service:  service,
+	}
 }
 
 func (h *Handlers) Home(c *gin.Context) {
@@ -26,7 +32,6 @@ func (h *Handlers) Home(c *gin.Context) {
 		render(c, views.WarningToast("The active game has been aborted"))
 		sess.Game.Cancel()
 	}
-
 	// render the home page
 	render(c, views.Home())
 }
@@ -39,34 +44,23 @@ func (h *Handlers) CreateGame(c *gin.Context) {
 		sess = h.sessions.New(sessionID, nil)
 	}
 
-	var req CreateGameRequest
+	// parse the request
+	var req models.CreateGameRequest
 	if err := c.ShouldBind(&req); err != nil {
 		slog.Error("Failed to bind CreateGameRequest", "error", err)
 		return
 	}
 
-	// create the players according to the game type
-	var player1, player2 connectfour.Player
-	switch req.Type {
-	case GameTypeBot:
-		player1 = connectfour.NewHumanPlayer("Player 1", 'X')
-		player2 = connectfour.NewMinimaxBot('O')
-	case GameTypeLocal:
-		player1, player2 = connectfour.NewHumanPlayerPair()
-	case GameTypeBotOnly:
-		player1 = connectfour.NewMinimaxBot('X')
-		player2 = connectfour.NewMinimaxBot('O')
-	default:
-		h.handleCriticalErr(c, "Unknown game type")
+	// create the game and add assign it to our session
+	game, err := h.service.CreateGame(req)
+	if err != nil {
+		h.handleCriticalErr(c, "Failed to create game")
 		return
 	}
-
-	// create the game and assign it to the session
-	game := connectfour.NewGame(player1, player2)
 	sess.SetGame(game)
 
 	// render the initial game board
-	if err := views.Game(sess.Game).Render(c.Request.Context(), c.Writer); err != nil {
+	if err = views.Game(sess.Game).Render(c.Request.Context(), c.Writer); err != nil {
 		h.handleCriticalErr(c, "Failed to render game board")
 		return
 	}
@@ -118,7 +112,7 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 	// the main game loop
 	humanMoved := false
 	for game.InProgress() {
-		player := game.Turns.Current()
+		player := game.CurrentPlayer()
 
 		if _, ok = player.(*connectfour.HumanPlayer); ok {
 			// if human already moved just return because we're expecting more input
@@ -127,13 +121,13 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 			}
 
 			// make a move from the input
-			var req MakeMoveRequest
+			var req models.MakeMoveRequest
 			if err := c.ShouldBind(&req); err != nil {
 				h.handleError(c, "An unexpected error has occurred")
 				slog.Error("Failed to bind MakeMoveRequest", "error", err)
 				return
 			}
-			if err := player.MakeMove(game.Board, req.Column); err != nil {
+			if err := h.service.MakeMove(c, player, game, req.Column); err != nil {
 				h.handleError(c, "Invalid move selection")
 				return
 			}
@@ -141,14 +135,16 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 		} else if bot, ok := player.(*connectfour.BotPlayer); ok {
 			// add some artificial delay
 			timer := time.NewTimer(300 * time.Millisecond)
-			bot.MakeBestMove(game.Board)
+			col := bot.Evaluate(game.Board)
+			if err := h.service.MakeMove(c, player, game, col); err != nil {
+				h.handleError(c, "Invalid move selection")
+				return
+			}
 			<-timer.C
 		}
 
-		// refresh board and session
-		game.RefreshState()
+		game.NextPlayer()
 		sess.Refresh()
-		game.Turns.Next()
 	}
 }
 
@@ -160,26 +156,16 @@ func (h *Handlers) SetDifficulty(c *gin.Context) {
 		return
 	}
 
-	var req SetDifficultyRequest
+	var req models.SetDifficultyRequest
 	if err := c.ShouldBind(&req); err != nil {
 		slog.Error("failed to bind request", "error", err)
 		h.handleError(c, "An unexpected error occurred")
 		return
 	}
 
-	for _, player := range sess.Game.Players {
-		if player.ID() != req.ID {
-			continue
-		}
-
-		bot, ok := player.(*connectfour.BotPlayer)
-		if !ok {
-			h.handleError(c, "The targeted player is not a bot.")
-			return
-		}
-		slog.Debug("Setting bot difficulty", "difficulty", req.Difficulty, "bot", bot.ID())
-		bot.SetDifficulty(req.Difficulty)
-		break
+	if err := h.service.SetDifficulty(sess.Game.Players, req); err != nil {
+		h.handleError(c, "Failed to set Difficulty")
+		return
 	}
 }
 

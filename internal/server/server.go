@@ -1,8 +1,12 @@
 package server
 
 import (
+	"fmt"
 	"github.com/Zach51920/connect-four/internal/config"
 	"github.com/Zach51920/connect-four/internal/handlers"
+	"github.com/Zach51920/connect-four/internal/mongo"
+	"github.com/Zach51920/connect-four/internal/repository"
+	"github.com/Zach51920/connect-four/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -14,8 +18,9 @@ import (
 )
 
 type Server struct {
-	router *gin.Engine
-	config *config.ServerConfig
+	router   *gin.Engine
+	config   *config.ServerConfig
+	provider *mongo.Provider
 }
 
 func New(cfg *config.ServerConfig) *Server {
@@ -23,6 +28,24 @@ func New(cfg *config.ServerConfig) *Server {
 }
 
 func (s *Server) init() error {
+	// create dependencies
+	var repo repository.Repository
+	if s.config.WithMongoDB {
+		provider, err := mongo.NewProvider(mongo.FromEnv())
+		if err != nil {
+			return fmt.Errorf("failed to initialize mongodb provider: %w", err)
+		} else if err = provider.Ping(); err != nil {
+			return fmt.Errorf("failed to ping mongo client: %w", err)
+		}
+		slog.Info("Saving moves to MongoDB")
+		repo = repository.NewMongoRepository(provider.DB())
+	} else {
+		slog.Info("Using mock repository")
+		repo = repository.NewMockRepository()
+	}
+	service := services.NewGameService(repo)
+	handle := handlers.New(service)
+
 	// initialize gin router
 	gin.SetMode(s.config.ParseGinMode())
 	r := gin.New()
@@ -54,7 +77,6 @@ func (s *Server) init() error {
 	r.Use(logMiddleware)
 
 	// register handlers
-	handle := handlers.New()
 	r.GET("/", handle.Home)
 	r.GET("/game", handle.GetGame)
 	r.POST("/game", handle.CreateGame)
@@ -75,4 +97,8 @@ func (s *Server) Run() error {
 	}
 	slog.Info("Starting server...")
 	return s.router.Run(s.config.Address)
+}
+
+func (s *Server) Close() error {
+	return s.provider.Close()
 }

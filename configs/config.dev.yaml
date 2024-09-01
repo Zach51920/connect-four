@@ -2,3 +2,4 @@ log_level: debug
 server:
   address: :8080
   gin_mode: debug
+  with_mongodb: false

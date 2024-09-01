@@ -2,21 +2,21 @@ package connectfour
 
 import (
 	"github.com/google/uuid"
-	"log/slog"
-	"math"
 )
 
 type Player interface {
 	Name() string
 	ID() string
 	Token() rune
+	SetToken(token rune) *BasePlayer
 	Score() uint64
 	AddScore(score uint64)
-	MakeMove(board *Board, col int) error
-	SetToken(token rune) *BasePlayer
-	Reset() *BasePlayer
 	Wins() int
 	IncWins()
+	Turn() int
+	IncTurn()
+	Reset() *BasePlayer
+	Strategy() string
 }
 
 type BasePlayer struct {
@@ -52,7 +52,7 @@ func (p *BasePlayer) ID() string { return p.id }
 
 func (p *BasePlayer) Score() uint64 { return p.score }
 
-func (p *BasePlayer) AddScore(score uint64) { p.score += score }
+func (p *BasePlayer) AddScore(score uint64) { p.score += uint64(score) }
 
 func (p *BasePlayer) Wins() int { return p.wins }
 
@@ -60,30 +60,12 @@ func (p *BasePlayer) IncWins() { p.wins++ }
 
 func (p *BasePlayer) Reset() *BasePlayer { p.score = 0; return p }
 
-func (p *BasePlayer) MakeMove(board *Board, col int) error {
-	if board.IsColumnFull(col) {
-		return ErrInvalidMove
-	}
+func (p *BasePlayer) IncTurn() { p.turn++ }
 
-	slog.Debug("making move", "col", col, "player", p.name)
-	board.Insert(p.token, col)
-	p.turn++
-
-	// calculate the players score /100
-	opToken := tokenSwitch[p.token]
-	eval := board.Evaluate(p.token, opToken)
-	clampedEval := math.Max(math.Min(eval, maxBaseScore), 0)
-
-	// exponentially increase the score based on turn
-	growthFactor := math.Pow(growthRate, float64(p.turn))
-	score := clampedEval * growthFactor
-
-	// update score
-	slog.Debug("updating players score", "turn", p.turn, "player", p.name, "score", score, "growthFactor", growthFactor)
-	p.AddScore(uint64(score))
-	return nil
-}
+func (p *BasePlayer) Turn() int { return p.turn }
 
 func (p *BasePlayer) SetToken(token rune) *BasePlayer { p.token = token; return p }
 
 func (p *BasePlayer) Token() rune { return p.token }
+
+func (p *HumanPlayer) Strategy() string { return "HUMAN" }

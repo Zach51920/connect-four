@@ -87,4 +87,8 @@ func (m *MinimaxStrat) Minimax(board *Board, token, opToken rune, depth int, isM
 	}
 }
 
+func (m *MinimaxStrat) Name() string {
+	return "MINMAX"
+}
+
 func (m *MinimaxStrat) SetDifficulty(depth int) { m.maxDepth = depth }
