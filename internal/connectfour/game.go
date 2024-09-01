@@ -30,28 +30,27 @@ type Meta struct {
 }
 
 type Game struct {
-	Players [2]Player
-	Turns   *TurnList
-	Board   *Board
-	Meta    *Meta
-	State   GameState
-	Winner  Player
+	Players             [2]Player
+	Board               *Board
+	Meta                *Meta
+	State               GameState
+	Winner              Player
+	CurrentPlayerIndex  int
 }
 
 func NewGame(player1, player2 Player) *Game {
-	game := &Game{
-		Players: [2]Player{player1, player2},
-		Board:   NewBoard(DefaultBoardRows, DefaultBoardColumns),
-		Meta:    &Meta{StartTime: time.Now(), LastMove: time.Now()},
+	return &Game{
+		Players:             [2]Player{player1, player2},
+		Board:               NewBoard(DefaultBoardRows, DefaultBoardColumns),
+		Meta:                &Meta{StartTime: time.Now(), LastMove: time.Now()},
+		CurrentPlayerIndex:  0,
 	}
-	game.Turns = NewTurnList(game)
-	return game
 }
 
 func (g *Game) Restart() {
 	g.State = GameStateNew
 	g.Board = NewBoard(g.Board.NumRows(), g.Board.NumCols())
-	g.Turns.Reset()
+	g.CurrentPlayerIndex = 0
 	g.Winner = nil
 
 	for _, player := range g.Players {
@@ -109,8 +108,17 @@ func (g *Game) ExpectHumanInput() bool {
 	if g.State == GameStateDraw || g.State == GameStateWin {
 		return false
 	}
-	_, isHuman := g.Turns.Current().(*HumanPlayer)
+	_, isHuman := g.CurrentPlayer().(*HumanPlayer)
 	return isHuman
+}
+
+func (g *Game) CurrentPlayer() Player {
+	return g.Players[g.CurrentPlayerIndex]
+}
+
+func (g *Game) NextPlayer() Player {
+	g.CurrentPlayerIndex = 1 - g.CurrentPlayerIndex // Toggle between 0 and 1
+	return g.CurrentPlayer()
 }
 
 func CalculateScore(player Player, board *Board) uint64 {

@@ -60,7 +60,7 @@ func (s *GameService) SetDifficulty(ctx context.Context, players [2]connectfour.
 }
 
 func (s *GameService) MakeMove(ctx context.Context, player connectfour.Player, game *connectfour.Game, col int) error {
-	if player != game.Turns.Current() {
+	if player != game.CurrentPlayer() {
 		return errors.New("not players turn")
 	}
 

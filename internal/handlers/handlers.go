@@ -112,7 +112,7 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 	// the main game loop
 	humanMoved := false
 	for game.InProgress() {
-		player := game.Turns.Current()
+		player := game.CurrentPlayer()
 
 		if _, ok = player.(*connectfour.HumanPlayer); ok {
 			// if human already moved just return because we're expecting more input
@@ -143,7 +143,7 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 			<-timer.C
 		}
 
-		game.Turns.Next()
+		game.NextPlayer()
 		sess.Refresh()
 	}
 }
