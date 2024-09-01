@@ -1,8 +1,10 @@
 package server
 
 import (
+	"fmt"
 	"github.com/Zach51920/connect-four/internal/config"
 	"github.com/Zach51920/connect-four/internal/handlers"
+	"github.com/Zach51920/connect-four/internal/mongo"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -23,6 +25,15 @@ func New(cfg *config.ServerConfig) *Server {
 }
 
 func (s *Server) init() error {
+	// init mongo provider
+	provider, err := mongo.NewProvider(mongo.FromEnv())
+	if err != nil {
+		return fmt.Errorf("failed to initialize mongodb provider: %w", err)
+	}
+	if err = provider.Ping(); err != nil {
+		return fmt.Errorf("failed to ping mongodb provider: %w", err)
+	}
+
 	// initialize gin router
 	gin.SetMode(s.config.ParseGinMode())
 	r := gin.New()

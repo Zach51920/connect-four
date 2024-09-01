@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/Zach51920/connect-four/internal/config"
-	"github.com/Zach51920/connect-four/internal/postgres"
 	"github.com/Zach51920/connect-four/internal/server"
 	_ "github.com/joho/godotenv/autoload"
 	"log"
@@ -19,9 +18,6 @@ func main() {
 		Level: cfg.ParseLogLevel(),
 	}))
 	slog.SetDefault(logger)
-
-	// run database migrations
-	postgres.RunMigrations()
 
 	// create and run the server
 	s := server.New(cfg.Server)

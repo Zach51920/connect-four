@@ -5,20 +5,20 @@ services:
       context: .
     container_name: connect4
     depends_on:
-      - postgres
+      - mongo
     restart: on-failure
     env_file: .env
+    ports:
+      - "8080:8080"
     volumes:
       - ./configs/config.prod.yaml:/app/config.yaml
 
-  postgres:
-    image: postgres:latest
-    container_name: postgres
+  mongo:
+    image: mongo:latest
+    container_name: connect4_mongo
+    restart: on-failure
     environment:
-      POSTGRES_DB: connect_four
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: password
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
     ports:
-      - "5432:5432"
-    volumes:
-      - ./data:/var/lib/postgresql/data
+      - "27017:27017"
