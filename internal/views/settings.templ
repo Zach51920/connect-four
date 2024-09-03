@@ -46,30 +46,69 @@ templ SettingsModal(game *connectfour.Game) {
 }
 
 templ minimaxBotControls(bot *connectfour.BotPlayer) {
-    <div class="form-control mb-4">
-        <label class="label" for={ fmt.Sprintf("difficulty-slider-%s", bot.ID()) }>
-            <span class="label-text font-semibold">Bot Intelligence</span>
-            <span class="label-text-alt font-semibold">{ bot.Name() }</span>
-        </label>
-        <input
-            type="range"
-            min="1"
-            max="10"
-            value={ fmt.Sprintf("%d", bot.Difficulty) }
-            class="themed-slider"
-            hx-post="/game/difficulty"
-            hx-trigger="change"
-            hx-vals={ fmt.Sprintf(`{"id": "%s"}`, bot.ID()) }
-            name="difficulty"
-            id={ fmt.Sprintf("difficulty-slider-%s", bot.ID()) }
-        />
-        <div class="w-full flex justify-between text-xs px-2 mt-2">
-            <span>Novice</span>
-            <span>Competent</span>
-            <span>Expert</span>
+    <form
+        id={ fmt.Sprintf("minimax-form-%s", bot.ID()) }
+        class="mb-4"
+        hx-post="/bot/config"
+        hx-trigger="change"
+        hx-target="#root"
+    >
+        <input type="hidden" name="id" value={ bot.ID() } />
+        <div class="form-control my-2">
+            <div class="w-full flex justify-center font-semibold text-md px-2 mt-2 mb-4">
+                <span>{ bot.Name() }</span>
+            </div>
+            <label class="label" for={ fmt.Sprintf("difficulty-slider-%s", bot.ID()) }>
+                <span class="label-text font-semibold">Bot Intelligence</span>
+                <span class="label-text-alt font-semibold">{ fmt.Sprintf("%d", bot.Config.Difficulty)}</span>
+            </label>
+            <input
+                type="range"
+                min="1"
+                max="10"
+                value={ fmt.Sprintf("%d", bot.Config.Difficulty) }
+                class="themed-slider"
+                name="difficulty"
+                id={ fmt.Sprintf("difficulty-slider-%s", bot.ID()) }
+            />
+            <div class="w-full flex justify-between text-xs px-2 mt-2">
+                <span>Novice</span>
+                <span>Competent</span>
+                <span>Expert</span>
+            </div>
+            if bot.Config.Difficulty > 6 {
+                <p class="text-sm text-warning mt-4">
+                    Warning: Calculations may be slow at this intelligence level
+                </p>
+            }
         </div>
-    </div>
-    <p class="text-sm text-warning mt-4">
-        Warning: Bot calculations may be slow at higher intelligence levels
-    </p>
+        <div class="form-control my-2">
+            <label class="label" for={ fmt.Sprintf("mistake-slider-%s", bot.ID()) }>
+                <span class="label-text font-semibold">Mistake Chance</span>
+                <span class="label-text-alt font-semibold">{ fmt.Sprintf("%d%%", bot.Config.MistakeFrequency)}</span>
+            </label>
+            <input
+                type="range"
+                min="0"
+                max="100"
+                value={ fmt.Sprintf("%d", bot.Config.MistakeFrequency) }
+                class="themed-slider"
+                name="mistake_frequency"
+                id={ fmt.Sprintf("mistake-slider-%s", bot.ID()) }
+            />
+        </div>
+        <div class="form-control my-2">
+            <label class="label cursor-pointer">
+                <span class="label-text font-semibold">Include Randomization</span>
+                <input
+                    type="checkbox"
+                    checked?={ bot.Config.Randomize }
+                    name="is_random"
+                    id={ fmt.Sprintf("randomize_checkbox-%s", bot.ID()) }
+                    class="checkbox"
+                />
+            </label>
+        </div>
+    </form>
 }
+

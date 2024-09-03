@@ -1,30 +1,37 @@
 package connectfour
 
 import (
+	"log/slog"
 	"math"
 	"math/rand"
 )
 
 const (
-	MinimaxDefaultDepth     = 6
 	MinimaxRandomnessFactor = 0.1
+	MinimaxDepthMultiplier  = 1
 )
 
 func NewMinimaxBot(token rune) *BotPlayer {
+	config := DefaultConfig()
 	return &BotPlayer{
-		Difficulty: MinimaxDefaultDepth,
-		strategy:   NewMinimaxStrat(MinimaxDefaultDepth),
+		Config:     config,
+		strategy:   NewMinimaxStrat(config),
 		BasePlayer: NewBasePlayer(randomUsername(), token),
 	}
 }
 
-type MinimaxStrat struct{ maxDepth int }
+type MinimaxStrat struct {
+	Config *Config
+}
 
-func NewMinimaxStrat(depth int) *MinimaxStrat {
-	return &MinimaxStrat{maxDepth: depth}
+func NewMinimaxStrat(config *Config) *MinimaxStrat {
+	return &MinimaxStrat{Config: config}
 }
 
 func (m *MinimaxStrat) Suggest(board *Board, token rune) int {
+	depth := m.Config.Difficulty * MinimaxDepthMultiplier
+	slog.Debug("Suggesting move", "depth", depth, "randomize", m.Config.Randomize)
+
 	bestCol := -1
 	bestScore := math.Inf(-1)
 	alpha := math.Inf(-1)
@@ -33,17 +40,18 @@ func (m *MinimaxStrat) Suggest(board *Board, token rune) int {
 
 	for _, col := range board.validColumns() {
 		tmpBoard := board.Copy().Insert(token, col)
-		score := m.Minimax(tmpBoard, token, opToken, m.maxDepth-1, false, alpha, beta)
+		score := m.Minimax(tmpBoard, token, opToken, depth, false, alpha, beta)
 
 		// Add randomness, smarter bots are less random
-		randWeight := 1 - MinimaxRandomnessFactor*float64(m.maxDepth)
-		score += rand.Float64() * randWeight
+		if m.Config.Randomize {
+			randWeight := 1 - MinimaxRandomnessFactor*float64(m.Config.Difficulty)
+			score += rand.Float64() * randWeight
+		}
 
 		if score > bestScore {
 			bestScore = score
 			bestCol = col
 		}
-
 		alpha = math.Max(alpha, score)
 		if beta <= alpha {
 			break
@@ -90,5 +98,3 @@ func (m *MinimaxStrat) Minimax(board *Board, token, opToken rune, depth int, isM
 func (m *MinimaxStrat) Name() string {
 	return "MINMAX"
 }
-
-func (m *MinimaxStrat) SetDifficulty(depth int) { m.maxDepth = depth }

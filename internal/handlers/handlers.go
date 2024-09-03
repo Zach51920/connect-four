@@ -148,7 +148,7 @@ func (h *Handlers) MakeMove(c *gin.Context) {
 	}
 }
 
-func (h *Handlers) SetDifficulty(c *gin.Context) {
+func (h *Handlers) ConfigureBot(c *gin.Context) {
 	sessionID := c.GetString("session_id")
 	sess, ok := h.sessions.Get(sessionID)
 	if !ok || sess == nil || sess.Game == nil {
@@ -156,17 +156,18 @@ func (h *Handlers) SetDifficulty(c *gin.Context) {
 		return
 	}
 
-	var req models.SetDifficultyRequest
+	var req models.BotConfigRequest
 	if err := c.ShouldBind(&req); err != nil {
 		slog.Error("failed to bind request", "error", err)
 		h.handleError(c, "An unexpected error occurred")
 		return
 	}
 
-	if err := h.service.SetDifficulty(sess.Game.Players, req); err != nil {
+	if err := h.service.UpdateBotConfig(sess.Game.Players, req); err != nil {
 		h.handleError(c, "Failed to set Difficulty")
 		return
 	}
+	render(c, views.SettingsModal(sess.Game))
 }
 
 func (h *Handlers) StopGame(c *gin.Context) {
