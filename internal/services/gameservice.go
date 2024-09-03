@@ -38,7 +38,7 @@ func (s *GameService) CreateGame(req models.CreateGameRequest) (*connectfour.Gam
 	return game, nil
 }
 
-func (s *GameService) SetDifficulty(players [2]connectfour.Player, req models.SetDifficultyRequest) error {
+func (s *GameService) UpdateBotConfig(players [2]connectfour.Player, req models.BotConfigRequest) error {
 	for _, player := range players {
 		if player.ID() != req.ID {
 			continue
@@ -47,8 +47,10 @@ func (s *GameService) SetDifficulty(players [2]connectfour.Player, req models.Se
 		if !ok {
 			return errors.New("invalid player type")
 		}
-		slog.Debug("Setting bot difficulty", "difficulty", req.Difficulty, "bot", bot.ID())
-		bot.SetDifficulty(req.Difficulty)
+		slog.Debug("Updating bot config", "bot", bot.ID(), "difficulty", req.Difficulty, "mistake_frequency", req.MistakeFrequency, "is_random", req.IsRandom)
+		bot.Config.SetDifficulty(req.Difficulty).
+			SetMistakeFrequency(req.MistakeFrequency).
+			IncludeRandomization(req.IsRandom == "on")
 		break
 	}
 	return nil

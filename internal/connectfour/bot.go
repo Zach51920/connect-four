@@ -6,18 +6,35 @@ import (
 	"math/rand"
 )
 
-const MistakeFrequency = 15 // every 15 * depth allow the bot to make a mistake
+type Config struct {
+	MistakeFrequency int
+	Difficulty       int
+	Randomize        bool
+}
+
+func DefaultConfig() *Config {
+	return &Config{
+		MistakeFrequency: 5,
+		Difficulty:       6,
+		Randomize:        true,
+	}
+}
+
+func (c *Config) SetMistakeFrequency(freq int) *Config { c.MistakeFrequency = freq; return c }
+
+func (c *Config) SetDifficulty(difficulty int) *Config { c.Difficulty = difficulty; return c }
+
+func (c *Config) IncludeRandomization(randomize bool) *Config { c.Randomize = randomize; return c }
 
 type Strategy interface {
-	Suggest(board *Board, token rune) int
-	SetDifficulty(skill int)
 	Name() string
+	Suggest(board *Board, token rune) int
 }
 
 type BotPlayer struct {
 	BasePlayer
-	strategy   Strategy
-	Difficulty int
+	Config   *Config
+	strategy Strategy
 }
 
 func (p *BotPlayer) Evaluate(board *Board) int {
@@ -27,21 +44,12 @@ func (p *BotPlayer) Evaluate(board *Board) int {
 	return p.strategy.Suggest(board, p.token)
 }
 
-func (p *BotPlayer) SetDifficulty(difficulty int) {
-	p.Difficulty = difficulty
-	p.strategy.SetDifficulty(difficulty)
-}
-
 func (p *BotPlayer) initialEval(board *Board) int {
-	// bots with a difficulty < 7 have a chance to make mistakes
-	if p.Difficulty < 7 {
-		freq := MistakeFrequency * p.Difficulty
-		if rand.Intn(freq) == 0 {
-			slog.Debug("bot is making an intentional mistake")
-			// make a mistake, return random column
-			validCols := board.validColumns()
-			return validCols[rand.Intn(len(validCols))]
-		}
+	if rand.Intn(100-p.Config.MistakeFrequency+1) == 0 {
+		slog.Debug("bot is making an intentional mistake")
+		// make a mistake, return random column
+		validCols := board.validColumns()
+		return validCols[rand.Intn(len(validCols))]
 	}
 
 	// check for immediate win or block

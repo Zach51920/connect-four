@@ -14,7 +14,9 @@ type CreateGameRequest struct {
 	Type string `form:"game_type"`
 }
 
-type SetDifficultyRequest struct {
-	Difficulty int    `form:"difficulty"`
-	ID         string `form:"id"`
+type BotConfigRequest struct {
+	ID               string `form:"id"`
+	Difficulty       int    `form:"difficulty"`
+	MistakeFrequency int    `form:"mistake_frequency"`
+	IsRandom         string `form:"is_random"`
 }

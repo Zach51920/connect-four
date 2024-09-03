@@ -82,9 +82,9 @@ func (s *Server) init() error {
 	r.POST("/game", handle.CreateGame)
 	r.GET("/game/stream", handle.StreamGame)
 	r.POST("/game/move", handle.MakeMove)
-	r.POST("/game/difficulty", handle.SetDifficulty)
 	r.POST("/game/restart", handle.RestartGame)
 	r.POST("/game/stop", handle.StopGame)
+	r.POST("/bot/config", handle.ConfigureBot)
 	r.GET("/settings", handle.Settings)
 
 	s.router = r
